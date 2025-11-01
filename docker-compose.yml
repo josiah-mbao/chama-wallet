@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  api:
+    build: ./backend
+    container_name: chama_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
