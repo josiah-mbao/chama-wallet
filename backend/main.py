@@ -5,12 +5,12 @@ from .database import SessionLocal, engine, Base
 
 Base.metadat.create_all(bind=engine)
 
-app = FastAPI(title="Chama Wallet API"))
+app = FastAPI(title="Chama Wallet API")
 
 def get_db():
     db = SessionLocal()
     try:
-        yield: db
+        yield db
     finally:
         db.close()
 
