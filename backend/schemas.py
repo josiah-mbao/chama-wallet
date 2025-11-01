@@ -23,7 +23,7 @@ class MemberCreate(MemberBase):
 
 class Member(MemberBase):
     id: int
-    contributions: List[Contribtion] = []
+    contributions: List[Contribution] = []
 
     class Config:
         orm_mode = True

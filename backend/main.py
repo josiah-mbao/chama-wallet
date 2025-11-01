@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
-from . import models, schemas, crud
-from .database import SessionLocal, engine, Base
+import models, schemas, crud
+from database import SessionLocal, engine, Base
 
-Base.metadat.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Chama Wallet API")
 
@@ -19,7 +19,7 @@ def list_members(db: Session = Depends(get_db)):
     return crud.get_members(db)
 
 @app.post("/members", response_model=schemas.Member)
-def add_member(member: schemas.MemberCreate, db: Sesion = Depends(get_db)):
+def add_member(member: schemas.MemberCreate, db: Session = Depends(get_db)):
     return crud.create_member(db, member)
 
 @app.post("/contributions", response_model=schemas.Contribution)
