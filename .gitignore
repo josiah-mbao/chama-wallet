@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.sqlite3
+*.db
+*.log
+
+# Virtual environments
+venv/
+.env/
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+
+# MacOS
+.DS_Store
+
+# Docker
+*.pid
+*.seed
+*.bak
+
+# VSCode / JetBrains
+.vscode/
+.idea/
+
+# Local data
+backend/chama.db
