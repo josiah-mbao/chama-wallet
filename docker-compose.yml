@@ -1,10 +1,25 @@
 services:
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: chama_api
+    build: ./backend  # Tell it to build using the Dockerfile in /backend
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./backend:/app  # Mount your code for hot-reloading
+    env_file:
+      - ./backend/.env  # Pass the .env file to the container
+    depends_on:
+      - db  # <-- This is crucial! It waits for the db to start.
+
+  db:
+    image: postgres:15-alpine  # Use a lightweight postgres image
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist the database data
+    environment:
+      - POSTGRES_USER=chamauser
+      - POSTGRES_PASSWORD=chamapassword
+      - POSTGRES_DB=chamadb
+    ports:
+      - "5432:5432" # Expose postgres port (optional, good for debugging)
+
+volumes:
+  postgres_data: # Define the persistent volume
