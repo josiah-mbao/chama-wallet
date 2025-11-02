@@ -3,8 +3,6 @@ from sqlalchemy.orm import Session
 import models, schemas, crud
 from database import SessionLocal, engine, Base
 
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Chama Wallet API")
 
 def get_db():
