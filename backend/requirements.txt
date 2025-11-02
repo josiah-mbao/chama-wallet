@@ -3,3 +3,5 @@ uvicorn
 sqlalchemy
 pydantic
 databases
+psycopg2-binary
+pydantic-settings
