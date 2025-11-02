@@ -5,3 +5,4 @@ pydantic
 databases
 psycopg2-binary
 pydantic-settings
+alembic
