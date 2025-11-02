@@ -1,4 +1,4 @@
-A simple **FastAPI + Docker** backend for managing chama (group savings) members and their contributions.  
+A simple **FastAPI + Docker + PostgreSQL** backend for managing chama (group savings) members and their contributions.  
 Built to demonstrate how to design, containerize, and run a real-world financial microservice in just a few hours.
 
 ---
@@ -9,7 +9,7 @@ Built to demonstrate how to design, containerize, and run a real-world financial
 - 💰 Record contributions from members  
 - 📊 Retrieve all members with their total contributions  
 - 🐳 Fully containerized with Docker Compose  
-- ⚡ Built with FastAPI + SQLAlchemy + SQLite  
+- ⚡ Built with FastAPI + SQLAlchemy + PostgreSQL
 
 ---
 
@@ -18,7 +18,7 @@ Built to demonstrate how to design, containerize, and run a real-world financial
 | Layer | Technology |
 |-------|-------------|
 | API Framework | [FastAPI](https://fastapi.tiangolo.com/) |
-| Database | SQLite (can be swapped for PostgreSQL) |
+| Database | PostgreSQL) |
 | ORM | SQLAlchemy |
 | Serialization | Pydantic |
 | Containerization | Docker & Docker Compose |
@@ -55,8 +55,12 @@ cd chama-wallet
 ```bash
 docker-compose up --build
 ```
-FastAPI will start on http://localhost:8000.
+This will start both:
+	•	🐘 PostgreSQL (on port 5432)
+	•	⚡ FastAPI backend (on port 8000)
 
+Visit:
+👉 http://localhost:8000/docs
 
 ### 3️⃣ Test the API
 
@@ -80,9 +84,9 @@ curl http://localhost:8000/members
 ```
 
 ## 💡 Next Steps
-- 🔐 Add JWT authentication
+- 🔐 Add JWT authentication (Next)
 - 📈 Create /summary endpoint for total chama balance
-- 🗄️ Switch to PostgreSQL for persistence
+- 🗄️ Switch to PostgreSQL for persistence (Done)
 - 🧪 Write unit tests using pytest
 - 🌐 Build a Next.js + TypeScript frontend to visualize chama data
 
