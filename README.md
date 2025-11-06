@@ -1,15 +1,17 @@
-A simple **FastAPI + Docker + PostgreSQL** backend for managing chama (group savings) members and their contributions.  
-Built to demonstrate how to design, containerize, and run a real-world financial microservice in just a few hours.
+A simple **FastAPI + Docker + PostgreSQL** backend for managing chama (group savings) members and their contributions. 
+Built to demonstrate how to design, containerize, and run a real-world financial microservice.
 
 ---
 
 ## 🚀 Features
 
-- 🧾 Register new chama members  
-- 💰 Record contributions from members  
-- 📊 Retrieve all members with their total contributions  
-- 🐳 Fully containerized with Docker Compose  
-- ⚡ Built with FastAPI + SQLAlchemy + PostgreSQL
+* **🔐 JWT Authentication:** Secure user registration and login for API access.
+* **🧑‍💻 User Management:** Register new API users and retrieve current user details (`/users/me`).
+* 🧾 Register new chama members
+* 💰 Record contributions from members
+* 📊 Retrieve all members with their total contributions
+* 🐳 Fully containerized with Docker Compose
+* ⚡ Built with FastAPI + SQLAlchemy + PostgreSQL
 
 ---
 
@@ -18,8 +20,9 @@ Built to demonstrate how to design, containerize, and run a real-world financial
 | Layer | Technology |
 |-------|-------------|
 | API Framework | [FastAPI](https://fastapi.tiangolo.com/) |
-| Database | PostgreSQL) |
+| Database | PostgreSQL |
 | ORM | SQLAlchemy |
+| Migrations | Alembic |
 | Serialization | Pydantic |
 | Containerization | Docker & Docker Compose |
 
@@ -30,16 +33,18 @@ Built to demonstrate how to design, containerize, and run a real-world financial
 ```bash
 chama-wallet/
 ├── backend/
-│   ├── main.py              # FastAPI app
-│   ├── models.py            # SQLAlchemy models
-│   ├── schemas.py           # Pydantic schemas
-│   ├── crud.py              # Database operations
-│   ├── database.py          # DB connection setup
-│   ├── requirements.txt     # Dependencies
-│   └── Dockerfile           # API Docker image
-├── docker-compose.yml       # Multi-container setup
+│   ├── main.py              # FastAPI app
+│   ├── crud.py              # Database operations
+│   ├── database.py          # DB connection setup
+│   ├── schemas.py           # Pydantic schemas
+│   ├── security.py          # JWT logic and dependencies
+│   ├── entrypoint.sh        # API startup script
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── models/              # SQLAlchemy models (NEW DIRECTORY)
+│   └── routers/             # Endpoint modules (NEW DIRECTORY)
+├── docker-compose.yml
 └── README.md
-```
 
 ---
 
@@ -51,7 +56,7 @@ git clone https://github.com/your-username/chama-wallet.git
 cd chama-wallet
 ```
 
-### 2️⃣ Build and Run with Docker
+### 2️⃣ Build and Run Services
 ```bash
 docker-compose up --build
 ```
@@ -62,31 +67,45 @@ This will start both:
 Visit:
 👉 http://localhost:8000/docs
 
-### 3️⃣ Test the API
+### 3️⃣ Run Database Migrations
 
-Open Swagger docs:
-👉 http://localhost:8000/docs
-
-Or use curl:
+**Important**: You must run Alembic migrations to create the database tables required by the API.
 ```bash
 # Add a member
+docker-compose run --rm api alembic upgrade head
+```
+Visit: 👉 http://localhost:8000/docs
+
+
+### 4️⃣ Test the API (Authenticated Flow)
+
+The core application features are protected by JWT. You must first register and log in to get an access token
+
+```bash
+# 1. Register an API User
+curl -X POST "http://localhost:8000/users/" \
+-H "Content-Type: application/json" \
+-d '{"email": "test@example.com", "password": "password123"}'
+
+# 2. Login and get JWT Access Token
+ACCESS_TOKEN=$(curl -s -X POST "http://localhost:8000/users/token" \
+-H "Content-Type: application/x-www-form-urlencoded" \
+-d "username=test@example.com&password=password123" | jq -r .access_token)
+echo "Access Token: $ACCESS_TOKEN"
+
+# 3. Use the token to access a protected route (e.g., Get the current user)
+curl -X GET "http://localhost:8000/users/me" \
+-H "Authorization: Bearer $ACCESS_TOKEN"
+
+# 4. Use the token for application logic (Protected endpoint example - Add a member)
 curl -X POST "http://localhost:8000/members" \
 -H "Content-Type: application/json" \
+-H "Authorization: Bearer $ACCESS_TOKEN" \
 -d '{"name": "Josiah", "email": "josiah@example.com"}'
-
-# Record a contribution
-curl -X POST "http://localhost:8000/contributions" \
--H "Content-Type: application/json" \
--d '{"amount": 500.0, "member_id": 1}'
-
-# Get all members with contributions
-curl http://localhost:8000/members
 ```
 
 ## 💡 Next Steps
-- 🔐 Add JWT authentication (Next)
 - 📈 Create /summary endpoint for total chama balance
-- 🗄️ Switch to PostgreSQL for persistence (Done)
 - 🧪 Write unit tests using pytest
 - 🌐 Build a Next.js + TypeScript frontend to visualize chama data
 
