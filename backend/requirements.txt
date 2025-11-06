@@ -6,3 +6,7 @@ databases
 psycopg2-binary
 pydantic-settings
 alembic
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+argon2-cffi>=21.3.0

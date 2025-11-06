@@ -6,7 +6,15 @@ from config import settings
 DATABASE_URL = settings.DATABASE_URL
 
 # Remove the 'connect_args' from this line
-engine = create_engine(DATABASE_URL) 
+engine = create_engine(DATABASE_URL, pool_pre_ping=True) 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+def get_db():
+    """Dependency that yields a new SQLAlchemy session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

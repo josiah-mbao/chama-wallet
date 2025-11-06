@@ -2,13 +2,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    # This will load from an .env file by default
-    # It will look for a variable named "DATABASE_URL"
     DATABASE_URL: str
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    # This tells Pydantic to look for a .env file
-    # We'll create this file next
-    model_config = SettingsConfigDict(env_file=".env")
-
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore"  # prevents errors if more env vars exist later
+    )
 
 settings = Settings()
