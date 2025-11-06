@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -9,13 +9,5 @@ class Member(Base):
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
 
+    # Define the relationship to Contribution (from contribution.py)
     contributions = relationship("Contribution", back_populates="member")
-
-class Contribution(Base):
-    __tablename__ = "contributions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    amount = Column(Float)
-    member_id = Column(Integer, ForeignKey("members.id"))
-
-    member = relationship("Member", back_populates="contributions")
