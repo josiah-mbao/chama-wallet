@@ -1,43 +1,89 @@
 # backend/routers/members.py
 
 from typing import Annotated, List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-
-# Import CRUD functions (including new contribution function)
 from crud import get_members, create_member, create_contribution
-# Import Pydantic schemas required for request/response bodies
-from schemas import Member, MemberCreate, Contribution, ContributionCreate 
-from security import get_current_user_email # For JWT Auth Dependency
+from schemas import Membership, Contribution, ContributionCreate
+from security import get_current_user_email
+from models.user import User  # Needed to look up user by email
 
 router = APIRouter(
-    prefix="/members", 
+    prefix="/members",
     tags=["Members"],
-    # Protect all routes in this router with JWT authentication
-    dependencies=[Depends(get_current_user_email)] 
 )
 
-# --- Member Endpoints ---
+# --- Get all members of a Chama ---
+@router.get("/{chama_id}", response_model=List[Membership])
+def read_members(
+    chama_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user_email: str = Depends(get_current_user_email)
+):
+    """
+    List all members in a specific Chama.
+    Requires authentication and membership check.
+    """
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-# 1. Get All Members (Uses crud.get_members)
-@router.get("/", response_model=List[Member])
-def read_members_endpoint(db: Annotated[Session, Depends(get_db)]):
-    """Retrieves a list of all members."""
-    return get_members(db)
+    # Optional: enforce that only members can list members
+    membership = db.query(Membership).filter(
+        Membership.user_id == user.id,
+        Membership.chama_id == chama_id
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="You are not a member of this Chama")
+    
+    return get_members(db, chama_id=chama_id)
 
-# 2. Create a Member (Uses crud.create_member)
-@router.post("/", response_model=Member, status_code=status.HTTP_201_CREATED)
-def add_member(member: MemberCreate, db: Annotated[Session, Depends(get_db)]):
-    """Creates a new member account."""
-    # Check for existing member (optional, but good practice)
-    # The users router handles primary auth email check, but a member check here is possible too.
-    return create_member(db, member)
+# --- Add the current user to a Chama ---
+@router.post("/{chama_id}", response_model=Membership, status_code=status.HTTP_201_CREATED)
+def join_chama(
+    chama_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user_email: str = Depends(get_current_user_email)
+):
+    """
+    Add the current user to the Chama as a 'member'.
+    """
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-# --- Contribution Endpoints (Assuming you want to keep them here for now) ---
+    # Prevent duplicate memberships
+    existing = db.query(Membership).filter(
+        Membership.user_id == user.id,
+        Membership.chama_id == chama_id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Already a member")
+    
+    return create_member(db, user.id, chama_id, role="member")
 
-@router.post("/contributions", response_model=Contribution, status_code=status.HTTP_201_CREATED)
-def add_contribution(contribution: ContributionCreate, db: Annotated[Session, Depends(get_db)]):
-    """Records a new contribution for a member."""
-    return create_contribution(db, contribution)
+# --- Record a contribution ---
+@router.post("/{chama_id}/contributions", response_model=Contribution, status_code=status.HTTP_201_CREATED)
+def add_contribution(
+    chama_id: int,
+    contribution: ContributionCreate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user_email: str = Depends(get_current_user_email)
+):
+    """
+    Record a new contribution for the current user in a Chama.
+    Requires membership check.
+    """
+    user = db.query(User).filter(User.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    membership = db.query(Membership).filter(
+        Membership.user_id == user.id,
+        Membership.chama_id == chama_id
+    ).first()
+    if not membership:
+        raise HTTPException(status_code=403, detail="User is not a member of this Chama")
+    
+    return create_contribution(db, user.id, chama_id, contribution.amount)

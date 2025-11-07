@@ -1,51 +1,67 @@
 # backend/crud.py
 
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
+from models.user import User
+from models.chama import Chama
+from models.membership import Membership
+from models.contribution import Contribution
+from schemas import UserCreate, ChamaCreate
+from security import get_password_hash
 
-# Import model modules
-from models import member as member_models
-from models import user as user_models
-from models import contribution as contribution_models
+# --- User CRUD ---
 
-# Import schemas
-from schemas import MemberCreate, ContributionCreate, UserCreate 
+def get_user_by_email(db: Session, email: str) -> Optional[User]:
+    return db.query(User).filter(User.email == email).first()
 
-# --- User CRUD Functions (For Authentication) ---
-
-def get_user_by_email(db: Session, email: str) -> Optional[user_models.User]:
-    """Retrieves a User object by email address."""
-    return db.query(user_models.User).filter(user_models.User.email == email).first()
-
-def create_user(db: Session, user: UserCreate, hashed_password: str) -> user_models.User:
-    """Creates a new User account in the database."""
-    db_user = user_models.User(email=user.email, hashed_password=hashed_password)
+def create_user(db: Session, user: UserCreate) -> User:
+    hashed_password = get_password_hash(user.password)
+    db_user = User(email=user.email, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
+# --- Chama CRUD ---
 
-# --- Member CRUD Functions ---
+def create_chama(db: Session, chama: ChamaCreate, creator_id: int) -> Chama:
+    db_chama = Chama(**chama.model_dump(), created_by_user_id=creator_id)
+    db.add(db_chama)
+    db.flush()  # Get ID before commit
 
-def get_members(db: Session) -> list[member_models.Member]:
-    """Retrieves all members."""
-    return db.query(member_models.Member).all()
+    # Add creator as admin
+    db_membership = Membership(user_id=creator_id, chama_id=db_chama.id, role="admin")
+    db.add(db_membership)
 
-def create_member(db: Session, member: MemberCreate) -> member_models.Member:
-    """Creates a new member."""
-    db_member = member_models.Member(name=member.name, email=member.email)
-    db.add(db_member)
     db.commit()
-    db.refresh(db_member)
-    return db_member
+    db.refresh(db_chama)
+    return db_chama
 
+def get_chama_by_id(db: Session, chama_id: int) -> Optional[Chama]:
+    return db.query(Chama).filter(Chama.id == chama_id).first()
 
-# --- Contribution CRUD Functions ---
+def get_chamas_for_user(db: Session, user_id: int) -> List[Chama]:
+    return db.query(Chama).join(Membership).filter(Membership.user_id == user_id).all()
 
-def create_contribution(db: Session, contribution: ContributionCreate) -> contribution_models.Contribution:
-    """Creates a new contribution."""
-    db_contribution = contribution_models.Contribution(**contribution.model_dump())
+# --- Membership CRUD ---
+
+def get_members(db: Session, chama_id: Optional[int] = None) -> List[Membership]:
+    query = db.query(Membership)
+    if chama_id:
+        query = query.filter(Membership.chama_id == chama_id)
+    return query.all()
+
+def create_member(db: Session, user_id: int, chama_id: int, role: str = "member") -> Membership:
+    db_membership = Membership(user_id=user_id, chama_id=chama_id, role=role)
+    db.add(db_membership)
+    db.commit()
+    db.refresh(db_membership)
+    return db_membership
+
+# --- Contribution CRUD ---
+
+def create_contribution(db: Session, user_id: int, chama_id: int, amount: float) -> Contribution:
+    db_contribution = Contribution(user_id=user_id, chama_id=chama_id, amount=amount)
     db.add(db_contribution)
     db.commit()
     db.refresh(db_contribution)

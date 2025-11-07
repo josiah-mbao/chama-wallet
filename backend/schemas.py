@@ -1,50 +1,62 @@
 # backend/schemas.py
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import List, Optional
+from datetime import datetime
 
-# --- Contribution Schemas ---
-class ContributionBase(BaseModel):
-    amount: float
-
-class ContributionCreate(ContributionBase):
-    member_id: int
-
-class Contribution(ContributionBase):
-    id: int
-    member_id: int
-
-    model_config = ConfigDict(from_attributes=True)
-
-# --- Member Schemas ---
-class MemberBase(BaseModel):
-    name: str
-    email: str
-
-class MemberCreate(MemberBase):
-    pass
-
-class Member(MemberBase):
-    id: int
-    contributions: List[Contribution] = []
-
-    model_config = ConfigDict(from_attributes=True)
-
-# --- User Schemas ---
-class UserCreate(BaseModel):
-    email: str
-    password: str
-
-class User(BaseModel):
-    email: str
-    id: int
-    
-    model_config = ConfigDict(from_attributes=True)
-
-# --- Token Schemas (Required for JWT) ---
+# --- JWT Utility Schemas ---
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+# --- User Schemas ---
+class UserBase(BaseModel):
+    email: EmailStr
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: int
+    is_active: bool = True
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Chama Schemas ---
+class ChamaBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class ChamaCreate(ChamaBase):
+    pass  # JWT provides creator_id
+
+class Chama(ChamaBase):
+    id: int
+    created_at: datetime
+    created_by_user_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+# Extended Chama for listing with members
+class Membership(BaseModel):
+    user_id: int
+    role: str
+    model_config = ConfigDict(from_attributes=True)
+
+class ChamaWithMembers(Chama):
+    memberships: List[Membership] = []
+
+# --- Contribution Schemas ---
+class ContributionBase(BaseModel):
+    amount: float
+
+class ContributionCreate(ContributionBase):
+    pass  # user_id and chama_id derived from JWT and route
+
+class Contribution(ContributionBase):
+    id: int
+    created_at: datetime
+    user_id: int
+    chama_id: int
+    model_config = ConfigDict(from_attributes=True)
