@@ -11,9 +11,10 @@ from schemas import TokenData # Import the schema we created
 # You MUST define these settings in your config.py
 # from config import settings 
 # settings.SECRET_KEY, settings.ALGORITHM, etc.
-SECRET_KEY = "juice_wins"  # <-- REPLACE WITH A REAL SECRET KEY!
+
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret_for_dev")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 # Set to your desired token expiry time
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 
 # --- Password Hashing Setup ---
