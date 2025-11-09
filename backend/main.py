@@ -2,10 +2,10 @@
 
 from fastapi import FastAPI
 # Note: get_db is assumed to be defined in database.py
-from database import get_db 
+from backend.database import get_db 
 
 # 1. Import all router instances
-from routers import users, chamas, members # Added chamas and members for completeness
+from backend.routers import users, chamas, members # Added chamas and members for completeness
 
 # 2. Create the FastAPI app instance
 app = FastAPI(

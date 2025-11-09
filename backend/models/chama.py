@@ -1,21 +1,18 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+# backend/models/chama.py
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.sql import func
-from database import Base
-
+from sqlalchemy.orm import relationship
+from backend.database import Base
 
 class Chama(Base):
     __tablename__ = "chamas"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
+    name = Column(String, unique=True)
+    description = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    # Foreign key linking the Chama creator to the User model
     created_by_user_id = Column(Integer, ForeignKey("users.id"))
-    creator = relationship("User", backref="created_chamas")
 
-    # Relationship to the Membership model
+    # Relationships
     memberships = relationship("Membership", back_populates="chama")
     contributions = relationship("Contribution", back_populates="chama")

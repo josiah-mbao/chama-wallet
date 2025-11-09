@@ -2,12 +2,12 @@
 
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from models.user import User
-from models.chama import Chama
-from models.membership import Membership
-from models.contribution import Contribution
-from schemas import UserCreate, ChamaCreate
-from security import get_password_hash
+from backend.models.user import User
+from backend.models.chama import Chama
+from backend.models.membership import Membership
+from backend.models.contribution import Contribution
+from backend.schemas import UserCreate, ChamaCreate
+from backend.security import get_password_hash
 
 # --- User CRUD ---
 

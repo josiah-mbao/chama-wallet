@@ -1,25 +1,26 @@
 services:
   api:
-    build: ./backend  # Tell it to build using the Dockerfile in /backend
+    build: ./backend  # Dockerfile is still in backend
+    working_dir: /app  # Root of the mounted project
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app  # Mount your code for hot-reloading
+      - ./:/app  # Mount the entire project
     env_file:
-      - ./backend/.env  # Pass the .env file to the container
+      - ./backend/.env  # Keep your env in backend
     depends_on:
-      - db  # <-- This is crucial! It waits for the db to start.
+      - db
 
   db:
-    image: postgres:15-alpine  # Use a lightweight postgres image
+    image: postgres:15-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data # Persist the database data
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=chamauser
       - POSTGRES_PASSWORD=chamapassword
       - POSTGRES_DB=chamadb
     ports:
-      - "5432:5432" # Expose postgres port (optional, good for debugging)
+      - "5432:5432"
 
 volumes:
-  postgres_data: # Define the persistent volume
+  postgres_data:

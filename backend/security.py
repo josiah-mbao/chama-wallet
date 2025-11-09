@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Optional
+import os
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from schemas import TokenData # Import the schema we created
+from backend.schemas import TokenData # Import the schema we created
 
 # You MUST define these settings in your config.py
 # from config import settings 
