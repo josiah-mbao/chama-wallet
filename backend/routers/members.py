@@ -3,11 +3,11 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from database import get_db
-from crud import get_members, create_member, create_contribution
-from schemas import Membership, Contribution, ContributionCreate
-from security import get_current_user_email
-from models.user import User  # Needed to look up user by email
+from backend.database import get_db
+from backend.crud import get_members, create_member, create_contribution
+from backend.schemas import Membership, Contribution, ContributionCreate
+from backend.security import get_current_user_email
+from backend.models.user import User  # Needed to look up user by email
 
 router = APIRouter(
     prefix="/members",

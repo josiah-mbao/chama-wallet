@@ -1,4 +1,4 @@
-# backend/config.py
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        extra="ignore"  # prevents errors if more env vars exist later
+        env_file=os.getenv("ENV_FILE", "backend/.env"),  # Default to .env
+        env_file_encoding="utf-8"
     )
 
 settings = Settings()

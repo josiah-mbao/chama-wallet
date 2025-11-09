@@ -11,3 +11,5 @@ passlib[bcrypt]
 python-multipart
 argon2-cffi>=21.3.0
 pydantic[email]
+pytest
+httpx
