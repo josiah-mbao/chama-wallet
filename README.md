@@ -1,3 +1,8 @@
+# Chama Wallet API
+
+![CI](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/Coverage-73%25-brightgreen)
+
 A simple **FastAPI + Docker + PostgreSQL** backend for managing chama (group savings) members and their contributions. 
 Built to demonstrate how to design, containerize, and run a real-world financial microservice.
 
