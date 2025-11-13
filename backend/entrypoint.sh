@@ -1,25 +1,24 @@
 #!/bin/sh
+set -e
 
-# The DB_HOST is "db" as defined in docker-compose.yml
+# Ensure Python sees /app as the root for imports
+export PYTHONPATH=/app
+
 DB_HOST="db"
 DB_PORT=5432
 
 echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT to be ready..."
 
-# Loop until the connection succeeds
-# Note: The 'nc' tool was installed in the Dockerfile for this check.
 until nc -z -v -w30 "$DB_HOST" "$DB_PORT"
 do
   echo "PostgreSQL is unavailable - sleeping"
   sleep 1
-done
+ done
 
 echo "PostgreSQL is up and running. Applying migrations."
 
-# Apply database migrations
-# Alembic reads DATABASE_URL from the environment set by docker-compose.yml
+# Apply database migrations with Alembic
 alembic upgrade head
 
-# Start the application
-echo "Starting application..."
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+# Start the FastAPI application
+exec uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload

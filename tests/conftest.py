@@ -6,17 +6,21 @@ from fastapi.testclient import TestClient
 from backend.main import app
 import pytest
 
+# --- 1. Create a dedicated test engine and session ---
 connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
 TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
-@pytest.fixture(scope="function", autouse=True)
-def setup_and_teardown_db():
+# --- 2. Create tables once per test session ---
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    """Create tables before tests start, drop them after all tests end."""
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
 
-@pytest.fixture
+# --- 3. Create and cleanup DB session for each test ---
+@pytest.fixture(scope="function")
 def db_session():
     db = TestingSessionLocal()
     try:
@@ -24,10 +28,12 @@ def db_session():
     finally:
         db.close()
 
-@pytest.fixture
+# --- 4. Override dependency in FastAPI with test DB session ---
+@pytest.fixture(scope="function")
 def client(db_session):
     def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
+    with TestClient(app) as c:
+        yield c
