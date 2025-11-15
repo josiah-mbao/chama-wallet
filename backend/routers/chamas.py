@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.security import get_current_user_email as get_current_user
+from backend.security import get_current_user
 from backend.schemas import Chama, ChamaCreate, ChamaWithMembers, User
 from backend.models.membership import Membership
 import backend.crud

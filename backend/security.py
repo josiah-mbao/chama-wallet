@@ -1,57 +1,46 @@
+# backend/security.py
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Optional
-import os
+from typing import Optional
 
+import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from backend.schemas import TokenData # Import the schema we created
+from backend import crud, schemas
+from backend.database import get_db
 
-# You MUST define these settings in your config.py
-# from config import settings 
-# settings.SECRET_KEY, settings.ALGORITHM, etc.
-
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret_for_dev")
-ALGORITHM = "HS256"
+# Config (must come from env in production)
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY not set in environment")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
+# Password hashing - ensure argon2-cffi or bcrypt is installed
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
-# --- Password Hashing Setup ---
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-
-def verify_password(plain_password, hashed_password):
-    """Verifies a plain password against a hash."""
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-
-def get_password_hash(password):
-    """Returns a hash of the given password."""
+def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 
-# --- JWT Token Setup ---
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
-
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Creates a JWT access token."""
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        # Use the global setting for default expiry
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    now = datetime.now(timezone.utc)
+    expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({
+        "exp": int(expire.timestamp()),
+        "iat": int(now.timestamp())
+    })
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def decode_access_token(token: str) -> Optional[TokenData]:
-    """Decodes a JWT access token and returns TokenData if valid."""
+def decode_access_token(token: str) -> schemas.TokenData:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -61,26 +50,21 @@ def decode_access_token(token: str) -> Optional[TokenData]:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
+            # sometimes sub stored differently; handle gracefully
             raise credentials_exception
-        token_data = TokenData(email=email)
+        return schemas.TokenData(email=email)
     except JWTError:
         raise credentials_exception
 
-    return token_data
 
-
-# --- FastAPI Security Dependency ---
-def get_current_user_email(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
-    """Dependency to get the current user's email from the JWT."""
-    # This uses the same credentials_exception as decode_access_token
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
+# Dependency that returns the full DB user
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     token_data = decode_access_token(token)
-    if token_data is None or token_data.email is None:
-        raise credentials_exception
-     
-    return token_data.email
+    user = crud.get_user_by_email(db, email=token_data.email)
+    if user is None or not getattr(user, "is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive or invalid user",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user

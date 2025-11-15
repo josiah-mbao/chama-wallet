@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.crud import get_members, create_member, create_contribution
 from backend.schemas import Membership, Contribution, ContributionCreate
-from backend.security import get_current_user_email
+from backend.security import get_current_user
 from backend.models.user import User  # Needed to look up user by email
 
 router = APIRouter(
@@ -19,7 +19,7 @@ router = APIRouter(
 def read_members(
     chama_id: int,
     db: Annotated[Session, Depends(get_db)],
-    current_user_email: str = Depends(get_current_user_email)
+    current_user_email: str = Depends(get_current_user)
 ):
     """
     List all members in a specific Chama.
@@ -44,7 +44,7 @@ def read_members(
 def join_chama(
     chama_id: int,
     db: Annotated[Session, Depends(get_db)],
-    current_user_email: str = Depends(get_current_user_email)
+    current_user_email: str = Depends(get_current_user)
 ):
     """
     Add the current user to the Chama as a 'member'.
@@ -69,7 +69,7 @@ def add_contribution(
     chama_id: int,
     contribution: ContributionCreate,
     db: Annotated[Session, Depends(get_db)],
-    current_user_email: str = Depends(get_current_user_email)
+    current_user_email: str = Depends(get_current_user)
 ):
     """
     Record a new contribution for the current user in a Chama.
