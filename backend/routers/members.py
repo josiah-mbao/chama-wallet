@@ -74,3 +74,24 @@ def add_contribution(
         raise HTTPException(status_code=403, detail="User is not a member of this Chama")
     
     return create_contribution(db, current_user.id, chama_id, contribution.amount)
+
+
+@router.post("/{chama_id}/add-member")
+def add_member(
+    chama_id: int,
+    member_email: str,
+    db: Session = Depends(get_db),
+    membership: Membership = Depends(require_role(chama_id, [MembershipRole.owner]))
+):
+    # Only owner can reach here
+    return create_member(db, chama_id, member_email)
+
+
+@router.post("/{chama_id}/add-contribution")
+def add_contribution(
+    chama_id: int,
+    contribution: ContributionCreate,
+    db: Session = Depends(get_db),
+    membership: Membership = Depends(require_role(chama_id, [MembershipRole.owner, MembershipRole.treasurer]))
+):
+    return create_contribution(db, chama_id, membership.user_id, contribution)

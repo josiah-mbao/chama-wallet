@@ -13,6 +13,9 @@ from backend import crud, schemas
 from backend.database import get_db
 from backend.models.user import UserRole
 from backend.models.user import User
+from backend.models.membership import Membership, MembershipRole
+from backend.routers.users import get_current_user
+
 
 # Config (must come from env in production)
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -88,3 +91,30 @@ def require_role(*allowed_roles: UserRole):
         return user  # Return full user object for router use
 
     return wrapper
+
+def require_role(chama_id: int, allowed_roles: list[MembershipRole]):
+    """Factory dependency to check a user's role in a Chama."""
+    def role_dependency(
+        current_user: str = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ):
+        user = db.query(User).filter(User.email == current_user).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        membership = db.query(Membership).filter(
+            Membership.user_id == user.id,
+            Membership.chama_id == chama_id
+        ).first()
+        
+        if not membership:
+            raise HTTPException(status_code=403, detail="Not a member of this Chama")
+        
+        if membership.role not in allowed_roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Requires role: {', '.join([r.value for r in allowed_roles])}"
+            )
+        
+        return membership
+    return role_dependency
