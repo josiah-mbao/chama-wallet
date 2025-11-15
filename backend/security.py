@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from backend import crud, schemas
 from backend.database import get_db
+from backend.models.user import UserRole
+from backend.models.user import User
 
 # Config (must come from env in production)
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -68,3 +70,21 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+def require_role(*allowed_roles: UserRole):
+    """
+    A dependency factory: require_role(UserRole.owner, UserRole.treasurer)
+    """
+    def wrapper(current_user_email: str = Depends(get_current_user), db: Session = Depends(get_db)):
+        user = db.query(User).filter(User.email == current_user_email).first()
+
+        if user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"User role '{user.role}' does not have permission."
+            )
+
+        return user  # Return full user object for router use
+
+    return wrapper

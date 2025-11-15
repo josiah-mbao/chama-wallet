@@ -1,6 +1,7 @@
 # backend/schemas.py
 
 from pydantic import BaseModel, ConfigDict, EmailStr
+from backend.models.user import UserRole
 from typing import List, Optional
 from datetime import datetime
 
@@ -18,10 +19,13 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    role: Optional[UserRole] = UserRole.member
 
 class User(UserBase):
     id: int
     is_active: bool = True
+    role: UserRole
+
     model_config = ConfigDict(from_attributes=True)
 
 # --- Chama Schemas ---

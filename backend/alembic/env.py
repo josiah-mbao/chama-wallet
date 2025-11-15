@@ -10,6 +10,7 @@ from alembic import context
 # --------------------------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(BASE_DIR, "backend"))  # Add backend explicitly
 
 # --------------------------------------------------------------------
 # Load environment variables
@@ -19,9 +20,9 @@ load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 # --------------------------------------------------------------------
 # Import app config and DB base
 # --------------------------------------------------------------------
-from config import settings
+from backend.config import settings
 from backend.database import Base
-from models import user, chama, membership, contribution  # import all models
+from backend.models import user, chama, membership, contribution  # import all models
 
 # --------------------------------------------------------------------
 # Alembic Config
