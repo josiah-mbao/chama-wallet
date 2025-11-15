@@ -1,99 +1,115 @@
-from typing import List
+from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.security import get_current_user, require_role
-from backend.schemas import Chama, ChamaCreate, ChamaWithMembers
-from backend.models.membership import Membership
-from backend.models.user import UserRole, User
-import backend.crud as crud
+from backend.crud import get_members, create_member, create_contribution
+from backend.schemas import Membership, Contribution, ContributionCreate
+from backend.security import get_current_user, require_chama_role
+from backend.models.user import User
+from backend.models.membership import MembershipRole
 
 router = APIRouter(
-    prefix="/chamas",
-    tags=["Chamas"],
+    prefix="/members",
+    tags=["Members"],
 )
 
-# --- Create a new Chama (Only owners can create) ---
-@router.post("/", response_model=ChamaWithMembers, status_code=status.HTTP_201_CREATED)
-def create_chama_endpoint(
-    chama: ChamaCreate, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.owner))
+# --- Helper to bind allowed roles at runtime ---
+def require_chama_role_runtime(allowed_roles: list[MembershipRole]):
+    """
+    Returns a dependency function that resolves the current user's membership
+    with the given allowed_roles in the Chama identified by the path param `chama_id`.
+    """
+    def dependency(
+        chama_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+    ):
+        return require_chama_role(chama_id, allowed_roles)(current_user=current_user, db=db)
+    return dependency
+
+
+# --- Get all members of a Chama ---
+@router.get("/{chama_id}", response_model=List[Membership])
+def read_members(
+    chama_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    membership: Membership = Depends(require_chama_role_runtime([
+        MembershipRole.owner,
+        MembershipRole.treasurer,
+        MembershipRole.member
+    ]))
 ):
     """
-    Create a new Chama.
-    Only owners can create Chamas.
-    The creator is automatically added as 'owner'.
+    List all members in a specific Chama.
+    Only members can list members.
     """
-    db_chama = crud.create_chama(db=db, chama=chama, creator_id=current_user.id)
-    memberships = crud.get_members(db, chama_id=db_chama.id)
-    
-    return ChamaWithMembers(
-        id=db_chama.id,
-        name=db_chama.name,
-        description=db_chama.description,
-        created_at=db_chama.created_at,
-        created_by_user_id=db_chama.created_by_user_id,
-        memberships=memberships
-    )
+    return get_members(db, chama_id=chama_id)
 
 
-# --- List Chamas the user is part of ---
-@router.get("/", response_model=List[ChamaWithMembers])
-def list_user_chamas_endpoint(
-    db: Session = Depends(get_db), 
-    current_user: User = Depends(require_role(UserRole.owner, UserRole.treasurer, UserRole.member))
+# --- Add the current user to a Chama ---
+@router.post("/{chama_id}", response_model=Membership, status_code=status.HTTP_201_CREATED)
+def join_chama(
+    chama_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: User = Depends(get_current_user)
 ):
     """
-    List all Chamas the authenticated user is a member of.
+    Add the current user to the Chama as a 'member'.
     """
-    chamas = crud.get_chamas_for_user(db, user_id=current_user.id)
-    
-    result = []
-    for chama in chamas:
-        memberships = crud.get_members(db, chama_id=chama.id)
-        result.append(ChamaWithMembers(
-            id=chama.id,
-            name=chama.name,
-            description=chama.description,
-            created_at=chama.created_at,
-            created_by_user_id=chama.created_by_user_id,
-            memberships=memberships
-        ))
-    return result
-
-
-# --- Get details of a single Chama ---
-@router.get("/{chama_id}", response_model=ChamaWithMembers)
-def get_chama_details_endpoint(
-    chama_id: int, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.owner, UserRole.treasurer, UserRole.member))
-):
-    """
-    Get Chama details by ID.
-    Only members can view the Chama.
-    """
-    chama = crud.get_chama_by_id(db, chama_id=chama_id)
-    if chama is None:
-        raise HTTPException(status_code=404, detail="Chama not found")
-    
-    membership = db.query(Membership).filter(
+    existing = db.query(Membership).filter(
         Membership.user_id == current_user.id,
         Membership.chama_id == chama_id
     ).first()
-    if not membership:
-        raise HTTPException(status_code=403, detail="User is not a member of this Chama")
+    if existing:
+        raise HTTPException(status_code=400, detail="Already a member")
     
-    memberships = crud.get_members(db, chama_id=chama_id)
-    
-    return ChamaWithMembers(
-        id=chama.id,
-        name=chama.name,
-        description=chama.description,
-        created_at=chama.created_at,
-        created_by_user_id=chama.created_by_user_id,
-        memberships=memberships
-    )
-# Note: Additional endpoints for updating or deleting Chamas can be added similarly,
-# with appropriate role checks using the require_role dependency.
+    return create_member(db, current_user.id, chama_id, role="member")
+
+
+# --- Record a contribution (Owner/Treasurer) ---
+@router.post("/{chama_id}/contributions", response_model=Contribution, status_code=status.HTTP_201_CREATED)
+def add_contribution(
+    chama_id: int,
+    contribution: ContributionCreate,
+    db: Annotated[Session, Depends(get_db)],
+    membership: Membership = Depends(require_chama_role_runtime([
+        MembershipRole.owner,
+        MembershipRole.treasurer
+    ]))
+):
+    """
+    Record a new contribution for the current user in a Chama.
+    Only treasurers or owners can add contributions.
+    """
+    return create_contribution(db, membership.user_id, chama_id, contribution.amount)
+
+
+# --- Owner-only: Add member ---
+@router.post("/{chama_id}/add-member")
+def add_member(
+    chama_id: int,
+    member_email: str,
+    db: Session = Depends(get_db),
+    membership: Membership = Depends(require_chama_role_runtime([MembershipRole.owner]))
+):
+    """
+    Only owner can add another member to the Chama.
+    """
+    return create_member(db, chama_id, member_email)
+
+
+# --- Owner/Treasurer-only: Add contribution for another user ---
+@router.post("/{chama_id}/add-contribution")
+def add_contribution_endpoint(
+    chama_id: int,
+    contribution: ContributionCreate,
+    db: Session = Depends(get_db),
+    membership: Membership = Depends(require_chama_role_runtime([
+        MembershipRole.owner,
+        MembershipRole.treasurer
+    ]))
+):
+    """
+    Only owner or treasurer can record contributions for other users.
+    """
+    return create_contribution(db, membership.user_id, chama_id, contribution)
