@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, text, Enum
 import enum
 from backend.database import Base
+from backend.models.membership import Membership
 
 class UserRole(str, enum.Enum):
     owner = "owner"
@@ -17,3 +18,4 @@ class User(Base):
     is_active = Column(Boolean, nullable=False, server_default=text("true"))
 
     role = Column(Enum(UserRole), nullable=False, server_default="member")
+    memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")

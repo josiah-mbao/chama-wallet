@@ -19,4 +19,5 @@ class Membership(Base):
 
     user = relationship("User", back_populates="memberships")
     chama = relationship("Chama", back_populates="memberships")
-    contributions = relationship("Contribution", back_populates="memberships")
+    contributions = relationship("Contribution", back_populates="membership", cascade="all, delete-orphan")
+
