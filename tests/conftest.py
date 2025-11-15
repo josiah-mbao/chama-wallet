@@ -1,10 +1,11 @@
-from backend.config_test import settings
+# tests/conftest.py
+import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from backend.database import Base, get_db
-from fastapi.testclient import TestClient
 from backend.main import app
-import pytest
+from backend.config_test import settings
 
 # --- 1. Create a dedicated test engine and session ---
 connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
@@ -26,6 +27,7 @@ def db_session():
     try:
         yield db
     finally:
+        db.rollback()  # rollback to keep DB clean between tests
         db.close()
 
 # --- 4. Override dependency in FastAPI with test DB session ---
@@ -37,3 +39,4 @@ def client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
+    app.dependency_overrides.clear()  # clean up overrides after each test
