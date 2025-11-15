@@ -20,7 +20,7 @@ load_dotenv(os.path.join(BASE_DIR, "..", ".env"))
 # Import app config and DB base
 # --------------------------------------------------------------------
 from config import settings
-from database import Base
+from backend.database import Base
 from models import user, chama, membership, contribution  # import all models
 
 # --------------------------------------------------------------------

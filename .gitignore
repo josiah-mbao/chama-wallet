@@ -31,3 +31,6 @@ venv/
 # Local data
 backend/chama.db
 *.env
+.coverage
+htmlcov/
+.coverage*
