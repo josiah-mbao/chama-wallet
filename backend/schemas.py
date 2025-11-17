@@ -121,6 +121,10 @@ class WebSocketEvent(BaseModel):
     payload: WebSocketEventPayload
 
 # --- Error Response Schemas ---
+class ErrorResponse(BaseModel):
+    error_code: str
+    detail: str
+
 class ValidationErrorDetail(BaseModel):
     field: str
     message: str
