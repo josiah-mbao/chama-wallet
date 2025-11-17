@@ -14,7 +14,7 @@ from backend.security import get_password_hash, verify_password, create_access_t
 # Note: Removed "from models import user as user_models" and "from config import settings" 
 # as they are not needed directly in the router now that CRUD and Security handle them.
 
-router = APIRouter(prefix="/users", tags=["Users & Auth"])
+router = APIRouter(tags=["Users & Auth"])
 
 # --- Registration Endpoint (Uses crud.create_user) ---
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)

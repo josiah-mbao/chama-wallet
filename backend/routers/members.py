@@ -10,7 +10,6 @@ from backend.models.user import User
 from backend.models.membership import Membership as MembershipModel, MembershipRole
 
 router = APIRouter(
-    prefix="/chamas/{chama_id}",
     tags=["Members"],
 )
 

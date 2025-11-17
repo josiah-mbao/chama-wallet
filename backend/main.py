@@ -10,9 +10,9 @@ app = FastAPI(
 )
 
 # Include all routers
-app.include_router(users_router, tags=["users"])
-app.include_router(chamas_router, tags=["chamas"])
-app.include_router(members_router, tags=["members"])
+app.include_router(users_router, prefix="/users", tags=["users"])
+app.include_router(chamas_router, prefix="/chamas", tags=["chamas"])
+app.include_router(members_router, prefix="/chamas/{chama_id}", tags=["members"])
 
 @app.get("/", tags=["Health"])
 def read_root():
