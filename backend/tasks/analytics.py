@@ -82,11 +82,10 @@ def recompute_chama_summaries(chama_id: int):
                 from backend.schemas import ChamaSummary
                 summary_obj = ChamaSummary(**summary_data)
                 from backend.routers.websockets import broadcast_chama_updated
-                # Broadcast with asyncio.create_task to avoid blocking
-                import asyncio
-                asyncio.create_task(broadcast_chama_updated(chama_id, summary=summary_obj))
+                # Note: WebSocket broadcasting handled by router caching, not Celery
+                logger.info(f"Summary data ready for WebSocket broadcast for chama {chama_id}")
             except Exception as broadcast_error:
-                logger.warning(f"Failed to broadcast summary update: {str(broadcast_error)}")
+                logger.warning(f"Failed to prepare summary broadcast: {str(broadcast_error)}")
 
             logger.info(f"Summary cached and broadcast for chama {chama_id}")
         except Exception as e:

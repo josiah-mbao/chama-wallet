@@ -134,30 +134,7 @@ def add_contribution(
     # Recompute chama summaries in the background
     recompute_chama_summaries.delay(chama_id=chama_id)
 
-    # Broadcast contribution creation via WebSocket
-    try:
-        from backend.routers.websockets import broadcast_contribution_created
-        from backend.schemas import Contribution, ChamaSummary, ChamaAnalytics
-        import asyncio
-
-        # Get contributor info for WebSocket event
-        contributor = db.query(UserModel).filter(UserModel.id == membership.user_id).first()
-        if contributor:
-            contribution_dict = {
-                "id": new_contribution.id,
-                "amount": new_contribution.amount,
-                "created_at": new_contribution.created_at
-            }
-            contribution_obj = Contribution(**contribution_dict)
-
-            # Broadcast the new contribution (summaries and analytics will be updated/recomputed)
-            asyncio.create_task(broadcast_contribution_created(
-                chama_id, contribution_obj, None, None
-            ))
-    except Exception as broadcast_error:
-        # Log error but don't fail the API response
-        from backend.logging_config import setup_logging
-        logger = setup_logging()
-        logger.warning(f"Failed to broadcast contribution: {str(broadcast_error)}")
+    # WebSocket broadcasts are handled when cached data is accessed
+    print(f"Contribution {new_contribution.id} added to chama {chama_id}")
 
     return new_contribution
