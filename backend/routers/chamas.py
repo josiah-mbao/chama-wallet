@@ -127,7 +127,8 @@ def get_chama_summary(
 
     # Try to get cached summary
     try:
-        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
+                       socket_connect_timeout=1, socket_timeout=1)
         cached_data = r.get(f"chama:{chama_id}:summary")
 
         if cached_data:
@@ -176,7 +177,8 @@ def get_chama_analytics(
 
     # Try to get cached analytics
     try:
-        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
+                       socket_connect_timeout=1, socket_timeout=1)
         cached_data = r.get(f"chama:{chama_id}:analytics")
 
         if cached_data:

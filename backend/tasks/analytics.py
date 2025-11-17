@@ -73,7 +73,8 @@ def recompute_chama_summaries(chama_id: int):
         try:
             import redis
             from backend.config import settings
-            r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
+            r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
+                           socket_connect_timeout=5, socket_timeout=5)
             r.setex(f"chama:{chama_id}:summary", 3600, json.dumps(summary_data))  # Cache for 1 hour
 
             # Broadcast WebSocket updates to connected clients
@@ -89,7 +90,7 @@ def recompute_chama_summaries(chama_id: int):
 
             logger.info(f"Summary cached and broadcast for chama {chama_id}")
         except Exception as e:
-            logger.error(f"Failed to cache summary for chama {chama_id}: {str(e)}")
+            logger.warning(f"Failed to cache summary for chama {chama_id}: {str(e)}")
 
         logger.info(f"Summary recomputation completed for chama {chama_id}")
 
@@ -231,11 +232,12 @@ def precompute_chama_analytics(chama_id: int):
         try:
             import redis
             from backend.config import settings
-            r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
+            r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
+                           socket_connect_timeout=5, socket_timeout=5)
             r.setex(f"chama:{chama_id}:analytics", 3600, json.dumps(analytics_data))  # Cache for 1 hour
             logger.info(f"Analytics cached for chama {chama_id}")
         except Exception as e:
-            logger.error(f"Failed to cache analytics for chama {chama_id}: {str(e)}")
+            logger.warning(f"Failed to cache analytics for chama {chama_id}: {str(e)}")
 
         logger.info(f"Analytics precomputation completed for chama {chama_id}")
 
