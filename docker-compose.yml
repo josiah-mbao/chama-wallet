@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app/backend  # Mount only backend code
+      - .:/app  # Mount entire project so tests/ and backend/ are available
     env_file:
       - ./backend/.env  # Keep your env in backend
     depends_on:

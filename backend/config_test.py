@@ -2,7 +2,7 @@
 from pydantic_settings import BaseSettings
 
 class TestSettings(BaseSettings):
-    DATABASE_URL: str = "sqlite+pysqlite:///:memory:"  # in-memory DB, fast
+    DATABASE_URL: str = "sqlite:///./test.db"
     SECRET_KEY: str = "test_secret"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
