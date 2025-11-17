@@ -25,7 +25,6 @@ class User(UserBase):
     id: int
     is_active: bool = True
     role: UserRole
-
     model_config = ConfigDict(from_attributes=True)
 
 # --- Chama Schemas ---
@@ -42,14 +41,17 @@ class Chama(ChamaBase):
     created_by_user_id: int
     model_config = ConfigDict(from_attributes=True)
 
-# Extended Chama for listing with members
+# --- Membership Schemas ---
 class Membership(BaseModel):
     user_id: int
+    chama_id: Optional[int] = None  # Make this optional
     role: str
     model_config = ConfigDict(from_attributes=True)
 
+# Chama with memberships
 class ChamaWithMembers(Chama):
     memberships: List[Membership] = []
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Contribution Schemas ---
 class ContributionBase(BaseModel):
@@ -61,6 +63,8 @@ class ContributionCreate(ContributionBase):
 class Contribution(ContributionBase):
     id: int
     created_at: datetime
-    user_id: int
-    chama_id: int
     model_config = ConfigDict(from_attributes=True)
+
+# --- Request Schemas ---
+class AddMemberRequest(BaseModel):
+    member_email: str

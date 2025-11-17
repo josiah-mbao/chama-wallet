@@ -24,24 +24,27 @@ def create_user(db: Session, user: UserCreate) -> User:
 
 # --- Chama CRUD ---
 
-def create_chama(db: Session, chama: ChamaCreate, creator_id: int) -> Chama:
-    db_chama = Chama(**chama.model_dump(), created_by_user_id=creator_id)
+def create_chama(db: Session, chama: ChamaCreate, owner_id: int) -> Chama:
+    db_chama = Chama(**chama.dict(), created_by_user_id=owner_id)
     db.add(db_chama)
-    db.flush()  # Get ID before commit
-
-    # Add creator as admin
-    db_membership = Membership(user_id=creator_id, chama_id=db_chama.id, role="admin")
-    db.add(db_membership)
-
     db.commit()
     db.refresh(db_chama)
+    
+    # Auto-add owner as member with owner role
+    membership = Membership(user_id=owner_id, chama_id=db_chama.id, role="owner")
+    db.add(membership)
+    db.commit()
+    
     return db_chama
 
 def get_chama_by_id(db: Session, chama_id: int) -> Optional[Chama]:
     return db.query(Chama).filter(Chama.id == chama_id).first()
 
-def get_chamas_for_user(db: Session, user_id: int) -> List[Chama]:
+def get_user_chamas(db: Session, user_id: int) -> List[Chama]:
     return db.query(Chama).join(Membership).filter(Membership.user_id == user_id).all()
+
+def get_chama(db: Session, chama_id: int):
+    return get_chama_by_id(db, chama_id)
 
 # --- Membership CRUD ---
 
@@ -60,8 +63,8 @@ def create_member(db: Session, user_id: int, chama_id: int, role: str = "member"
 
 # --- Contribution CRUD ---
 
-def create_contribution(db: Session, user_id: int, chama_id: int, amount: float) -> Contribution:
-    db_contribution = Contribution(user_id=user_id, chama_id=chama_id, amount=amount)
+def create_contribution(db: Session, membership_id: int, amount: float) -> Contribution:
+    db_contribution = Contribution(membership_id=membership_id, amount=amount)
     db.add(db_contribution)
     db.commit()
     db.refresh(db_contribution)
