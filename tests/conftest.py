@@ -80,11 +80,11 @@ def client(db_session, mock_celery_tasks):
     from backend.routers.users import router as users_router
     from backend.routers.chamas import router as chamas_router
     from backend.routers.members import router as members_router
-    from backend.middleware import RequestLoggingMiddleware
+
 
     test_app = FastAPI(title="Test Chama Wallet API")
-    # Only add logging middleware, skip rate limiting
-    test_app.add_middleware(RequestLoggingMiddleware)
+    # Skip all middleware for tests to avoid conflicts
+    # test_app.add_middleware(RequestLoggingMiddleware)
 
     test_app.include_router(users_router, prefix="/users", tags=["users"])
     test_app.include_router(chamas_router, prefix="/chamas", tags=["chamas"])
