@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, text, Enum
+from sqlalchemy.orm import relationship
 import enum
 from backend.database import Base
-from backend.models.membership import Membership
 
 class UserRole(str, enum.Enum):
     owner = "owner"
