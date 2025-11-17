@@ -86,7 +86,7 @@ def get_chama_details(
 
     # Check if user is a member of this chama
     membership = db.query(MembershipModel).filter(
-        Membership.chama_id == chama_id,
+        MembershipModel.chama_id == chama_id,
         MembershipModel.user_id == current_user.id
     ).first()
 
