@@ -10,6 +10,8 @@ os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["SECRET_KEY"] = "test_secret_key_for_testing"
 # Disable Redis for tests (will use fake connection that fails gracefully)
 os.environ["REDIS_URL"] = "redis://localhost:9999/0"  # Non-existent Redis URL
+# Disable rate limiting for tests
+os.environ["DISABLE_RATE_LIMITING"] = "true"
 
 from backend.database import Base, get_db, engine as app_engine
 from backend.main import app

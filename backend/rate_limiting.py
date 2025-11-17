@@ -80,6 +80,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.exempt_ips = set(exempt_ips or [])
 
     async def dispatch(self, request: Request, call_next):
+        # Skip rate limiting for tests (can be controlled via environment variable)
+        import os
+        if os.getenv("DISABLE_RATE_LIMITING") == "true":
+            return await call_next(request)
+
         # Skip rate limiting for exempt paths
         if request.url.path in self.exempt_paths:
             return await call_next(request)
