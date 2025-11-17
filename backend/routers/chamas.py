@@ -1,6 +1,6 @@
 # backend/routers/chamas.py
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.crud import create_chama, get_user_chamas, get_chama
@@ -8,6 +8,7 @@ from backend.schemas import Chama, ChamaCreate, ChamaWithMembers, Membership
 from backend.security import get_current_user
 from backend.models.user import User
 from backend.models.membership import Membership as MembershipModel
+from backend.exceptions import ResourceNotFoundError, AuthorizationError
 
 router = APIRouter(
     tags=["Chamas"],
@@ -75,16 +76,16 @@ def get_chama_details(
     """
     chama = get_chama(db, chama_id=chama_id)
     if not chama:
-        raise HTTPException(status_code=404, detail="Chama not found")
-    
+        raise ResourceNotFoundError("Chama", str(chama_id))
+
     # Check if user is a member of this chama
     membership = db.query(MembershipModel).filter(
         MembershipModel.chama_id == chama_id,
         MembershipModel.user_id == current_user.id
     ).first()
-    
+
     if not membership:
-        raise HTTPException(status_code=403, detail="Not a member of this chama")
+        raise AuthorizationError("Not a member of this chama")
     
     # Populate memberships for response
     memberships = [

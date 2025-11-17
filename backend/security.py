@@ -12,6 +12,7 @@ from backend import crud, schemas
 from backend.database import get_db
 from backend.models.user import UserRole, User
 from backend.models.membership import Membership, MembershipRole
+from backend.exceptions import AuthenticationError, AuthorizationError, InactiveUserError
 
 
 # --- Config (should come from environment in production) ---

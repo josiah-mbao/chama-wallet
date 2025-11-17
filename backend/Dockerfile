@@ -8,13 +8,14 @@ RUN apt-get update && \
     apt-get install -y netcat-traditional gcc libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# Copy entrypoint first and make it executable
+COPY entrypoint.sh .
+RUN chmod +x /app/entrypoint.sh
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-
-# Make the entrypoint script executable (you did this before, but keep it)
-RUN chmod +x /app/entrypoint.sh
 
 # Set the entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]

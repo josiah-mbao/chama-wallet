@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 # --- 0. Use a file-based SQLite DB for tests ---
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["SECRET_KEY"] = "test_secret_key_for_testing"
 
 from backend.database import Base, get_db, engine as app_engine
 from backend.main import app

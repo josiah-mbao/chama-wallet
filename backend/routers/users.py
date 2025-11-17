@@ -2,16 +2,17 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 
 from backend.database import get_db
 # Import ONLY the necessary CRUD functions
-from backend.crud import get_user_by_email, create_user 
-from backend.schemas import User, UserCreate, Token # Removed TokenData as it's not used here
+from backend.crud import get_user_by_email, create_user
+from backend.schemas import User, UserCreate, Token  # Removed TokenData as it's not used here
 from backend.security import get_password_hash, verify_password, create_access_token, get_current_user
-# Note: Removed "from models import user as user_models" and "from config import settings" 
+from backend.exceptions import DuplicateResourceError, AuthenticationError
+# Note: Removed "from models import user as user_models" and "from config import settings"
 # as they are not needed directly in the router now that CRUD and Security handle them.
 
 router = APIRouter(tags=["Users & Auth"])
@@ -23,7 +24,7 @@ def register_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
     # 1. Check for existing user using CRUD
     db_user = get_user_by_email(db, email=user.email)
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise DuplicateResourceError("User", f"Email {user.email} already registered")
 
     return create_user(db, user=user)
 
@@ -40,11 +41,7 @@ def login_for_access_token(
 
     # 2. Verify user and password using security
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthenticationError("Incorrect username or password")
 
     # 3. Create the JWT using security
     access_token = create_access_token(data={"sub": user.email})

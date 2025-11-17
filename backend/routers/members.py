@@ -1,13 +1,14 @@
 # backend/routers/members.py
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.crud import get_members, create_member, create_contribution
+from backend.crud import get_members, create_member, create_contribution, get_user_by_email
 from backend.schemas import Membership, Contribution, ContributionCreate, AddMemberRequest
 from backend.security import get_current_user, require_chama_role
 from backend.models.user import User
 from backend.models.membership import Membership as MembershipModel, MembershipRole
+from backend.exceptions import AlreadyMemberError, ResourceNotFoundError
 
 router = APIRouter(
     tags=["Members"],
@@ -60,7 +61,7 @@ def join_chama(
         MembershipModel.chama_id == chama_id
     ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Already a member")
+        raise AlreadyMemberError()
     
     new_member = create_member(db, user_id=current_user.id, chama_id=chama_id, role="member")
     return Membership(user_id=new_member.user_id, chama_id=new_member.chama_id, role=new_member.role)
@@ -76,11 +77,9 @@ def add_member_by_owner(
     """
     Only owner can add another member to the Chama.
     """
-    from backend.crud import get_user_by_email
-
     user = get_user_by_email(db, request_data.member_email)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise ResourceNotFoundError("User", request_data.member_email)
 
     # Check if already a member
     existing = db.query(MembershipModel).filter(
@@ -88,7 +87,7 @@ def add_member_by_owner(
         MembershipModel.chama_id == chama_id
     ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="User already a member")
+        raise AlreadyMemberError()
 
     new_member = create_member(db, user_id=user.id, chama_id=chama_id, role=user.role.value)
     return Membership(user_id=new_member.user_id, chama_id=new_member.chama_id, role=new_member.role)

@@ -68,3 +68,18 @@ class Contribution(ContributionBase):
 # --- Request Schemas ---
 class AddMemberRequest(BaseModel):
     member_email: str
+
+
+# --- Error Response Schemas ---
+class ErrorResponse(BaseModel):
+    error_code: str
+    detail: str
+
+class ValidationErrorDetail(BaseModel):
+    field: str
+    message: str
+
+class ValidationErrorResponse(BaseModel):
+    error_code: str = "validation_error"
+    detail: str = "Validation failed"
+    errors: List[ValidationErrorDetail] = []

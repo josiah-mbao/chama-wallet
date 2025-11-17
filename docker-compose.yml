@@ -2,7 +2,6 @@ services:
   api:
     build: ./backend  # Dockerfile is still in backend
     working_dir: /app  # Root of the mounted project
-    command: ["sh", "./entrypoint.sh"]
     ports:
       - "8000:8000"
     volumes:
