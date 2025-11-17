@@ -10,8 +10,7 @@ class Contribution(Base):
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    member_id = Column(Integer, ForeignKey("memberships.id"))
+    membership_id = Column(Integer, ForeignKey("memberships.id"))
     chama_id = Column(Integer, ForeignKey("chamas.id"))
 
-    member = relationship("Membership", back_populates="contributions")
     chama = relationship("Chama", back_populates="contributions")
