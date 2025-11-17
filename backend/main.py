@@ -1,5 +1,5 @@
 # backend/main.py
-import logging
+import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -10,17 +10,25 @@ from backend.routers.chamas import router as chamas_router
 from backend.routers.members import router as members_router
 from backend.exceptions import ChamaWalletException
 from backend.schemas import ErrorResponse, ValidationErrorResponse, ValidationErrorDetail
+from backend.logging_config import setup_logging
+from backend.middleware import RequestLoggingMiddleware
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# Set default SECRET_KEY for local development if not set
+if not os.getenv("SECRET_KEY"):
+    os.environ["SECRET_KEY"] = "dev_secret_key_local_development_only"
+
+# Configure comprehensive logging
+logger = setup_logging(
+    log_level=os.getenv("LOG_LEVEL", "INFO"),
+    enable_file_logging=os.getenv("ENABLE_FILE_LOGGING", "true").lower() == "true"
 )
-logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Chama Wallet API",
 )
+
+# Add logging middleware
+app.add_middleware(RequestLoggingMiddleware)
 
 # Include all routers
 app.include_router(users_router, prefix="/users", tags=["users"])
