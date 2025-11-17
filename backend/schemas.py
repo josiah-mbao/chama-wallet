@@ -69,6 +69,46 @@ class Contribution(ContributionBase):
 class AddMemberRequest(BaseModel):
     member_email: str
 
+# --- Summary and Analytics Schemas ---
+class LatestContribution(BaseModel):
+    amount: float
+    member: str
+    timestamp: str  # ISO8601 datetime string
+
+class ChamaSummary(BaseModel):
+    chama_id: int
+    name: str
+    total_members: int
+    total_contributions: float
+    total_contributions_count: int
+    latest_contribution: Optional[LatestContribution] = None
+    last_updated: str  # ISO8601 datetime string
+    status: Optional[str] = None
+
+class MonthlyContribution(BaseModel):
+    month: str  # YYYY-MM format
+    total: float
+    transactions: int
+
+class TopContributor(BaseModel):
+    member: str
+    total_contributed: float
+
+class ContributionFrequency(BaseModel):
+    weekly: int
+    monthly: int
+
+class ChamaAnalytics(BaseModel):
+    chama_id: int
+    monthly_contributions: List[MonthlyContribution]
+    top_contributors: List[TopContributor]
+    average_contribution: float
+    contribution_frequency: ContributionFrequency
+    growth_rate: str  # Percentage string like "12.5%"
+    trend: str  # "increasing", "stable", "decreasing"
+    last_updated: str  # ISO8601 datetime string
+    status: Optional[str] = None
+
 
 # --- Error Response Schemas ---
 class ErrorResponse(BaseModel):

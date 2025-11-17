@@ -18,6 +18,18 @@ connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL
 engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
 TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
+
+# --- Disable rate limiting for tests ---
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class NoOpRateLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware that disables rate limiting for tests"""
+    async def dispatch(self, request: Request, call_next):
+        # Skip all rate limiting for tests
+        response = await call_next(request)
+        return response
+
 # --- 2. Create tables once per test session ---
 @pytest.fixture(scope="session", autouse=True)
 def setup_database():
@@ -42,10 +54,25 @@ def db_session():
 # --- 4. Provide a TestClient with overridden DB dependency ---
 @pytest.fixture(scope="function")
 def client(db_session):
+    # Create a test app without rate limiting middleware
+    from fastapi import FastAPI
+    from backend.routers.users import router as users_router
+    from backend.routers.chamas import router as chamas_router
+    from backend.routers.members import router as members_router
+    from backend.middleware import RequestLoggingMiddleware
+
+    test_app = FastAPI(title="Test Chama Wallet API")
+    # Only add logging middleware, skip rate limiting
+    test_app.add_middleware(RequestLoggingMiddleware)
+
+    test_app.include_router(users_router, prefix="/users", tags=["users"])
+    test_app.include_router(chamas_router, prefix="/chamas", tags=["chamas"])
+    test_app.include_router(members_router, prefix="/chamas/{chama_id}", tags=["members"])
+
     def override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    test_app.dependency_overrides[get_db] = override_get_db
+    with TestClient(test_app) as c:
         yield c
-    app.dependency_overrides.clear()
+    test_app.dependency_overrides.clear()

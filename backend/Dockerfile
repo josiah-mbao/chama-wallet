@@ -16,6 +16,3 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-
-# Set the entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]

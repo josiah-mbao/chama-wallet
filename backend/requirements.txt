@@ -15,3 +15,5 @@ pytest
 httpx
 pytest-cov
 coverage
+celery
+redis

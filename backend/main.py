@@ -12,6 +12,7 @@ from backend.exceptions import ChamaWalletException
 from backend.schemas import ErrorResponse, ValidationErrorResponse, ValidationErrorDetail
 from backend.logging_config import setup_logging
 from backend.middleware import RequestLoggingMiddleware
+from backend.rate_limiting import RateLimitMiddleware
 
 # Set default SECRET_KEY for local development if not set
 if not os.getenv("SECRET_KEY"):
@@ -27,7 +28,8 @@ app = FastAPI(
     title="Chama Wallet API",
 )
 
-# Add logging middleware
+# Add middleware (order matters - rate limiting should be first)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 # Include all routers

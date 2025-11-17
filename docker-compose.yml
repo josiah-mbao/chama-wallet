@@ -2,6 +2,16 @@ services:
   api:
     build: ./backend  # Dockerfile is still in backend
     working_dir: /app  # Root of the mounted project
+    command: >
+      sh -c "
+        export PYTHONPATH=/app &&
+        echo 'Waiting for PostgreSQL at db:5432 to be ready...' &&
+        until nc -z -v -w30 db 5432; do echo 'PostgreSQL is unavailable - sleeping'; sleep 1; done &&
+        echo 'PostgreSQL is up and running. Applying migrations.' &&
+        cd backend && alembic upgrade head &&
+        echo 'Starting FastAPI application' &&
+        uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+      "
     ports:
       - "8000:8000"
     volumes:
@@ -10,6 +20,7 @@ services:
       - ./backend/.env  # Keep your env in backend
     depends_on:
       - db
+      - redis
 
   db:
     image: postgres:15-alpine
@@ -22,5 +33,25 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  celery_worker:
+    build: ./backend
+    working_dir: /app
+    command: ["sh", "-c", "PYTHONPATH=/app celery -A backend.celery_app worker --loglevel=info"]
+    volumes:
+      - .:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+      - db
+
 volumes:
   postgres_data:
+  redis_data:

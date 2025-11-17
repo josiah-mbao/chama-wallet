@@ -90,6 +90,15 @@ def add_member_by_owner(
         raise AlreadyMemberError()
 
     new_member = create_member(db, user_id=user.id, chama_id=chama_id, role=user.role.value)
+
+    # Trigger background notification task
+    from backend.tasks.notifications import notify_member_added
+    notify_member_added.delay(
+        chama_id=chama_id,
+        new_member_id=user.id,
+        added_by_id=membership.user_id
+    )
+
     return Membership(user_id=new_member.user_id, chama_id=new_member.chama_id, role=new_member.role)
 
 # --- Add contribution (Treasurer/Owner) ---
@@ -108,4 +117,20 @@ def add_contribution(
     Only treasurers or owners can add contributions.
     """
     new_contribution = create_contribution(db, membership_id=membership.id, amount=contribution.amount)
+
+    # Trigger background tasks
+    from backend.tasks.notifications import notify_contribution_created
+    from backend.tasks.analytics import recompute_chama_summaries
+
+    # Send notification to chama owners/treasurers about the new contribution
+    notify_contribution_created.delay(
+        chama_id=chama_id,
+        user_id=membership.user_id,
+        amount=new_contribution.amount,
+        contribution_id=new_contribution.id
+    )
+
+    # Recompute chama summaries in the background
+    recompute_chama_summaries.delay(chama_id=chama_id)
+
     return new_contribution

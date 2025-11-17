@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.crud import create_chama, get_user_chamas, get_chama
-from backend.schemas import Chama, ChamaCreate, ChamaWithMembers, Membership
-from backend.security import get_current_user
+from backend.schemas import Chama, ChamaCreate, ChamaWithMembers, Membership, ChamaSummary, ChamaAnalytics
+from backend.security import get_current_user, require_chama_role
+from backend.models.membership import MembershipRole
 from backend.models.user import User
 from backend.models.membership import Membership as MembershipModel
 from backend.exceptions import ResourceNotFoundError, AuthorizationError
@@ -25,6 +26,11 @@ def create_new_chama(
     Create a new Chama with the current user as owner.
     """
     new_chama = create_chama(db=db, chama=chama, owner_id=current_user.id)
+
+    # Trigger background notification task
+    from backend.tasks.notifications import notify_chama_created
+    notify_chama_created.delay(chama_id=new_chama.id, owner_id=current_user.id)
+
     # Build memberships for response - include chama_id
     return ChamaWithMembers(
         id=new_chama.id,
@@ -80,13 +86,13 @@ def get_chama_details(
 
     # Check if user is a member of this chama
     membership = db.query(MembershipModel).filter(
-        MembershipModel.chama_id == chama_id,
+        Membership.chama_id == chama_id,
         MembershipModel.user_id == current_user.id
     ).first()
 
     if not membership:
         raise AuthorizationError("Not a member of this chama")
-    
+
     # Populate memberships for response
     memberships = [
         Membership(user_id=m.user_id, chama_id=m.chama_id, role=m.role)
@@ -100,3 +106,102 @@ def get_chama_details(
         created_by_user_id=chama.created_by_user_id,
         memberships=memberships
     )
+
+# --- Get Chama summary (cached, fast) ---
+@router.get("/{chama_id}/summary", response_model=dict)
+def get_chama_summary(
+    chama_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get cached summary of Chama metrics. Fast endpoint for dashboards and mobile apps.
+    """
+    # Only members can view summary
+    membership = require_chama_role(chama_id, [
+        MembershipRole.owner, MembershipRole.treasurer, MembershipRole.member
+    ])(current_user, db=None)
+
+    # Import Redis for caching
+    import redis
+    from backend.config import settings
+
+    # Try to get cached summary
+    try:
+        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        cached_data = r.get(f"chama:{chama_id}:summary")
+
+        if cached_data:
+            import json
+            return json.loads(cached_data)
+    except Exception as e:
+        # Log error but don't fail - we'll recompute
+        from backend.logging_config import setup_logging
+        logger = setup_logging()
+        logger.warning(f"Redis connection error for summary cache: {str(e)}")
+
+    # If no cached data, trigger background computation and return placeholder
+    from backend.tasks.analytics import recompute_chama_summaries
+    recompute_chama_summaries.delay(chama_id)
+
+    # Return a placeholder saying data is being computed
+    from datetime import datetime, timezone
+    return {
+        "chama_id": chama_id,
+        "name": "Loading...",
+        "total_members": 0,
+        "total_contributions": 0.0,
+        "total_contributions_count": 0,
+        "latest_contribution": None,
+        "last_updated": datetime.now(timezone.utc).isoformat(),
+        "status": "computing"
+    }
+
+# --- Get Chama analytics (cached, fast) ---
+@router.get("/{chama_id}/analytics", response_model=dict)
+def get_chama_analytics(
+    chama_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get cached analytics data for Chama. Structured for dashboards and charts.
+    """
+    # Only members can view analytics
+    membership = require_chama_role(chama_id, [
+        MembershipRole.owner, MembershipRole.treasurer, MembershipRole.member
+    ])(current_user, db=None)
+
+    # Import Redis for caching
+    import redis
+    from backend.config import settings
+
+    # Try to get cached analytics
+    try:
+        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+        cached_data = r.get(f"chama:{chama_id}:analytics")
+
+        if cached_data:
+            import json
+            return json.loads(cached_data)
+    except Exception as e:
+        # Log error but don't fail - we'll recompute
+        from backend.logging_config import setup_logging
+        logger = setup_logging()
+        logger.warning(f"Redis connection error for analytics cache: {str(e)}")
+
+    # If no cached data, trigger background computation and return placeholder
+    from backend.tasks.analytics import precompute_chama_analytics
+    precompute_chama_analytics.delay(chama_id)
+
+    # Return a placeholder saying data is being computed
+    from datetime import datetime, timezone
+    return {
+        "chama_id": chama_id,
+        "monthly_contributions": [],
+        "top_contributors": [],
+        "average_contribution": 0.0,
+        "contribution_frequency": {"weekly": 0, "monthly": 0},
+        "growth_rate": "0%",
+        "trend": "stable",
+        "last_updated": datetime.now(timezone.utc).isoformat(),
+        "status": "computing"
+    }
