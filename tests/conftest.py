@@ -8,10 +8,20 @@ from sqlalchemy.orm import sessionmaker
 # --- 0. Use a file-based SQLite DB for tests ---
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["SECRET_KEY"] = "test_secret_key_for_testing"
+# Disable Redis for tests (will use fake connection that fails gracefully)
+os.environ["REDIS_URL"] = "redis://localhost:9999/0"  # Non-existent Redis URL
 
 from backend.database import Base, get_db, engine as app_engine
 from backend.main import app
 from backend.config_test import settings
+
+# Mock Celery tasks for tests to avoid Redis connections
+from unittest.mock import MagicMock, patch
+import pytest
+
+# Mock all Celery task delay calls
+celery_mock = MagicMock()
+celery_mock.delay = MagicMock()
 
 # --- 1. Create a dedicated test engine and session for testing ---
 connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
@@ -51,9 +61,20 @@ def db_session():
         db.rollback()
         db.close()
 
-# --- 4. Provide a TestClient with overridden DB dependency ---
+# --- 4. Mock Celery tasks to avoid Redis connections ---
+@pytest.fixture(scope="function", autouse=True)
+def mock_celery_tasks():
+    """Mock all Celery task .delay() calls to avoid Redis connections during tests"""
+    with patch('backend.tasks.notifications.notify_chama_created.delay'), \
+         patch('backend.tasks.notifications.notify_member_added.delay'), \
+         patch('backend.tasks.notifications.notify_contribution_created.delay'), \
+         patch('backend.tasks.analytics.recompute_chama_summaries.delay'), \
+         patch('backend.tasks.analytics.precompute_chama_analytics.delay'):
+        yield
+
+# --- 5. Provide a TestClient with overridden DB dependency ---
 @pytest.fixture(scope="function")
-def client(db_session):
+def client(db_session, mock_celery_tasks):
     # Create a test app without rate limiting middleware
     from fastapi import FastAPI
     from backend.routers.users import router as users_router
