@@ -25,7 +25,7 @@ def create_user(db: Session, user: UserCreate) -> User:
 # --- Chama CRUD ---
 
 def create_chama(db: Session, chama: ChamaCreate, owner_id: int) -> Chama:
-    db_chama = Chama(**chama.dict(), created_by_user_id=owner_id)
+    db_chama = Chama(**chama.model_dump(), created_by_user_id=owner_id)
     db.add(db_chama)
     db.commit()
     db.refresh(db_chama)
