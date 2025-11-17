@@ -109,17 +109,38 @@ class ChamaAnalytics(BaseModel):
     last_updated: str  # ISO8601 datetime string
     status: Optional[str] = None
 
+# --- WebSocket Event Schemas ---
+class WebSocketEventPayload(BaseModel):
+    summary: Optional[ChamaSummary] = None
+    analytics: Optional[ChamaAnalytics] = None
+    contribution: Optional[Contribution] = None
 
-# --- Error Response Schemas ---
-class ErrorResponse(BaseModel):
-    error_code: str
-    detail: str
+class WebSocketEvent(BaseModel):
+    event_type: str  # "CONTRIBUTION_CREATED", "MEMBER_ADDED", "CHAMA_UPDATED", "ANALYTICS_UPDATED"
+    timestamp: str  # ISO8601 datetime string
+    payload: WebSocketEventPayload
 
-class ValidationErrorDetail(BaseModel):
-    field: str
-    message: str
+# --- WebSocket Event Schemas ---
+class WebSocketEventPayload(BaseModel):
+    summary: Optional[ChamaSummary] = None
+    analytics: Optional[ChamaAnalytics] = None
+    contribution: Optional[Contribution] = None
+
+class WebSocketEvent(BaseModel):
+    event_type: str  # "CONTRIBUTION_CREATED", "MEMBER_ADDED", "CHAMA_UPDATED", "ANALYTICS_UPDATED"
+    timestamp: str  # ISO8601 datetime string
 
 class ValidationErrorResponse(BaseModel):
     error_code: str = "validation_error"
     detail: str = "Validation failed"
     errors: List[ValidationErrorDetail] = []
+
+# --- WebSocket Event Schemas ---
+class WebSocketEventPayload(BaseModel):
+    summary: Optional[ChamaSummary] = None
+    analytics: Optional[ChamaAnalytics] = None
+    contribution: Optional[Contribution] = None
+
+class WebSocketEvent(BaseModel):
+    event_type: str  # "CONTRIBUTION_CREATED", "MEMBER_ADDED", "CHAMA_UPDATED", "ANALYTICS_UPDATED"
+    timestamp: str  # ISO8601 datetime string

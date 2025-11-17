@@ -75,7 +75,19 @@ def recompute_chama_summaries(chama_id: int):
             from backend.config import settings
             r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
             r.setex(f"chama:{chama_id}:summary", 3600, json.dumps(summary_data))  # Cache for 1 hour
-            logger.info(f"Summary cached for chama {chama_id}")
+
+            # Broadcast WebSocket updates to connected clients
+            try:
+                from backend.schemas import ChamaSummary
+                summary_obj = ChamaSummary(**summary_data)
+                from backend.routers.websockets import broadcast_chama_updated
+                # Broadcast with asyncio.create_task to avoid blocking
+                import asyncio
+                asyncio.create_task(broadcast_chama_updated(chama_id, summary=summary_obj))
+            except Exception as broadcast_error:
+                logger.warning(f"Failed to broadcast summary update: {str(broadcast_error)}")
+
+            logger.info(f"Summary cached and broadcast for chama {chama_id}")
         except Exception as e:
             logger.error(f"Failed to cache summary for chama {chama_id}: {str(e)}")
 
