@@ -5,11 +5,9 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.security import get_current_user_optional
 from backend.schemas import WebSocketEvent, WebSocketEventPayload, ChamaSummary, ChamaAnalytics, Contribution
 from backend.logging_config import setup_logging
 from backend.models.user import User
-from backend.models.membership import MembershipRole
 
 logger = setup_logging()
 
