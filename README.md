@@ -1,7 +1,7 @@
 # 🚀 **Chama Wallet API - Real-Time Fintech Platform**
 
 [![CI/CD Pipeline](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml/badge.svg)](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml)
-[![Coverage Status](https://img.shields.io/badge/Coverage-100%25-brightgreen)](https://github.com/josiah-mbao/chama-wallet/)
+[![Coverage Status](https://img.shields.io/badge/Coverage-42%25-green)](https://github.com/josiah-mbao/chama-wallet/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
@@ -37,7 +37,7 @@ Built with **enterprise-grade architecture** to demonstrate real-world fintech A
 * **⚡ Performance Optimization:** Background recomputation of analytics and summaries
 
 ### **Production-Ready Features**
-* **🧪 Comprehensive Testing:** 18+ tests with 100% pass rate including CI/CD pipeline
+* **🧪 Comprehensive Testing:** 24 tests with CI/CD pipeline and 42% coverage
 * **🐳 Complete Dockerization:** Multi-service container orchestration
 * **📊 Monitoring & Logging:** Structured logging with correlation IDs
 * **🛡️ Security:** Rate limiting, input validation, and secure authentication
@@ -81,7 +81,7 @@ graph TB
         PROD[Production Deployment]
         PROD --> DOCKER[Docker Compose<br/>🐳 API + Redis + Celery]
         PROD --> MONITOR[Monitoring & Logs<br/>📊 Performance]
-        PROD --> TESTS[CI/CD Pipeline<br/>🧪 18 Tests ✅]
+        PROD --> TESTS[CI/CD Pipeline<br/>🧪 24 Tests ✅]
     end
 
     classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -304,11 +304,61 @@ docker-compose logs celery_worker
 - **WebSocket Broadcasting:** Sub-millisecond event delivery
 - **Background Processing:** Automatic analytics recomputation
 - **Concurrent Users:** Scales to 1000s of Chama members
-- **CI/CD Tests:** **18 tests passing** with 100% coverage
+- **CI/CD Tests:** **24 tests passing** with 42% coverage
 
 ---
 
 ## 💡 **Future Enhancements**
+
+## 🧪 **Testing & Quality Assurance**
+
+### **Automated Test Suite**
+Our comprehensive testing infrastructure ensures production reliability:
+
+- **🧪 24+ Automated Tests:** Covering API endpoints, business logic, middleware, and data integrity
+- **📊 42% Code Coverage:** Measuring test effectiveness across backend modules
+- **⚡ CI/CD Pipeline:** GitHub Actions with automated test execution on every commit
+- **🔄 Multi-Environment Testing:** Compatible with SQLite (local) and PostgreSQL (production)
+
+### **Test Categories**
+```bash
+tests/
+├── integration/test_api.py     # ✅ End-to-end API flow testing
+├── unit/
+│   ├── test_users.py           # ✅ Authentication & user management
+│   ├── test_crud.py            # ✅ Database operations
+│   ├── test_crud_extended.py   # ✅ Advanced CRUD functions
+│   ├── test_middleware.py      # ✅ Request/Response middleware
+│   ├── test_schemas.py         # ✅ Data validation & Pydantic
+│   ├── test_security.py        # ✅ JWT tokens & password hashing
+│   └── test_exception_handlers.py # ⚠️ Exception handling (CI compatibility)
+```
+
+### **Running Tests**
+```bash
+# Install test dependencies
+pip install -r backend/requirements.txt
+
+# Run all tests with coverage
+pytest --cov=backend --cov-report=term-missing
+
+# Run specific test suites
+pytest tests/integration/          # API integration tests
+pytest tests/unit/                  # Unit tests
+
+# Generate coverage reports
+pytest --cov=backend --cov-report=html  # HTML report in htmlcov/
+```
+
+### **Coverage Report Breakdown**
+| Module | Coverage | Key Tested Components |
+|--------|----------|----------------------|
+| **crud.py** | 98% | Database operations, chama lifecycle |
+| **routers/** | 55% | User auth, chama management |
+| **middleware.py** | 34% | Request processing, tenant context |
+| **main.py** | 71% | Exception handlers |
+| **security.py** | 67% | JWT authentication |
+| **Total Backend** | **42%** | Core business logic tested |
 
 The platform provides a solid foundation for fintech expansion:
 
