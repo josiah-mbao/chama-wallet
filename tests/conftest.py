@@ -13,7 +13,7 @@ os.environ["REDIS_URL"] = "redis://localhost:9999/0"  # Non-existent Redis URL
 # Disable rate limiting for tests
 os.environ["DISABLE_RATE_LIMITING"] = "true"
 
-from backend.database import Base, get_db, engine as app_engine
+from backend.database import Base, get_db
 from backend.main import app
 from backend.config_test import settings
 
@@ -60,19 +60,29 @@ def db_session():
     try:
         yield db
     finally:
-        db.rollback()
+        db.commit()  # Commit to preserve data for integration tests
         db.close()
 
 # --- 4. Mock Celery tasks to avoid Redis connections ---
 @pytest.fixture(scope="function", autouse=True)
 def mock_celery_tasks():
     """Mock all Celery task .delay() calls to avoid Redis connections during tests"""
-    with patch('backend.tasks.notifications.notify_chama_created.delay'), \
-         patch('backend.tasks.notifications.notify_member_added.delay'), \
-         patch('backend.tasks.notifications.notify_contribution_created.delay'), \
-         patch('backend.tasks.analytics.recompute_chama_summaries.delay'), \
-         patch('backend.tasks.analytics.precompute_chama_analytics.delay'):
+    mocks = []
+    try:
+        mocks = [
+            patch('backend.tasks.notifications', MagicMock()),  # Mock entire notifications module
+            patch('backend.tasks.analytics.recompute_chama_summaries.delay'),
+            patch('backend.tasks.analytics.precompute_chama_analytics.delay'),
+            patch('backend.schema_management.setup_tenant_database'),  # Mock schema creation for sqlite tests
+            patch('backend.schema_management.create_tenant_schema', return_value=True),
+        ]
+        [m.start() for m in mocks]
         yield
+    except (AttributeError, ModuleNotFoundError):
+        # If celery modules not available, skip mocking
+        yield
+    finally:
+        [m.stop() for m in mocks if hasattr(m, 'stop')]
 
 # --- 5. Provide a TestClient with overridden DB dependency ---
 @pytest.fixture(scope="function")

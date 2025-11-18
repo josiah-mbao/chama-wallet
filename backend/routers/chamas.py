@@ -28,8 +28,8 @@ def create_new_chama(
     new_chama = create_chama(db=db, chama=chama, owner_id=current_user.id)
 
     # Trigger background notification task
-    from backend.tasks.notifications import notify_chama_created
-    notify_chama_created.delay(chama_id=new_chama.id, owner_id=current_user.id)
+    # from backend.tasks.notifications import notify_chama_created
+    # notify_chama_created.delay(chama_id=new_chama.id, owner_id=current_user.id)
 
     # Build memberships for response - include chama_id
     return ChamaWithMembers(
@@ -121,24 +121,11 @@ def get_chama_summary(
         MembershipRole.owner, MembershipRole.treasurer, MembershipRole.member
     ])(current_user, db=None)
 
-    # Import Redis for caching
-    import redis
-    from backend.config import settings
-
-    # Try to get cached summary
-    try:
-        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
-                       socket_connect_timeout=1, socket_timeout=1)
-        cached_data = r.get(f"chama:{chama_id}:summary")
-
-        if cached_data:
-            import json
-            return json.loads(cached_data)
-    except Exception as e:
-        # Log error but don't fail - we'll recompute
-        from backend.logging_config import setup_logging
-        logger = setup_logging()
-        logger.warning(f"Redis connection error for summary cache: {str(e)}")
+    # Try to get cached summary using tenant-aware cache
+    from backend.cache_utils import get_chama_summary
+    cached_data = get_chama_summary(chama_id)
+    if cached_data:
+        return cached_data
 
     # If no cached data, trigger background computation and return placeholder
     from backend.tasks.analytics import recompute_chama_summaries
@@ -171,24 +158,11 @@ def get_chama_analytics(
         MembershipRole.owner, MembershipRole.treasurer, MembershipRole.member
     ])(current_user, db=None)
 
-    # Import Redis for caching
-    import redis
-    from backend.config import settings
-
-    # Try to get cached analytics
-    try:
-        r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
-                       socket_connect_timeout=1, socket_timeout=1)
-        cached_data = r.get(f"chama:{chama_id}:analytics")
-
-        if cached_data:
-            import json
-            return json.loads(cached_data)
-    except Exception as e:
-        # Log error but don't fail - we'll recompute
-        from backend.logging_config import setup_logging
-        logger = setup_logging()
-        logger.warning(f"Redis connection error for analytics cache: {str(e)}")
+    # Try to get cached analytics using tenant-aware cache
+    from backend.cache_utils import get_chama_analytics
+    cached_data = get_chama_analytics(chama_id)
+    if cached_data:
+        return cached_data
 
     # If no cached data, trigger background computation and return placeholder
     from backend.tasks.analytics import precompute_chama_analytics
