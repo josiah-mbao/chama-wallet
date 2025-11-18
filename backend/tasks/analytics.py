@@ -11,13 +11,17 @@ def recompute_chama_summaries(chama_id: int):
     This is useful for performance optimization - we can cache expensive calculations.
     """
     try:
-        # Import here to avoid circular imports
-        from backend.database import get_db
-        from backend.models.chama import Chama
-        from backend.models.membership import Membership
-        from backend.models.contribution import Contribution
+        # Set tenant context for this entire background task
+        from backend.database import current_tenant, get_db
+        token = current_tenant.set(chama_id)
 
-        db = next(get_db())
+        try:
+            db = next(get_db())
+
+            # Import here to avoid circular imports
+            from backend.models.chama import Chama
+            from backend.models.membership import Membership
+            from backend.models.contribution import Contribution
 
         # Get chama details
         chama = db.query(Chama).filter(Chama.id == chama_id).first()
@@ -69,13 +73,10 @@ def recompute_chama_summaries(chama_id: int):
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
 
-        # Cache in Redis
+        # Cache in Redis using tenant-aware cache utilities
         try:
-            import redis
-            from backend.config import settings
-            r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
-                           socket_connect_timeout=5, socket_timeout=5)
-            r.setex(f"chama:{chama_id}:summary", 3600, json.dumps(summary_data))  # Cache for 1 hour
+            from backend.cache_utils import set_chama_summary
+            set_chama_summary(chama_id, summary_data)  # Cache for 1 hour
 
             # Broadcast WebSocket updates to connected clients
             try:
@@ -227,13 +228,10 @@ def precompute_chama_analytics(chama_id: int):
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
 
-        # Cache in Redis
+        # Cache in Redis using tenant-aware cache utilities
         try:
-            import redis
-            from backend.config import settings
-            r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
-                           socket_connect_timeout=5, socket_timeout=5)
-            r.setex(f"chama:{chama_id}:analytics", 3600, json.dumps(analytics_data))  # Cache for 1 hour
+            from backend.cache_utils import set_chama_analytics
+            set_chama_analytics(chama_id, analytics_data)  # Cache for 1 hour
             logger.info(f"Analytics cached for chama {chama_id}")
         except Exception as e:
             logger.warning(f"Failed to cache analytics for chama {chama_id}: {str(e)}")

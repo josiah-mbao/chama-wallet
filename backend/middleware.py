@@ -1,13 +1,16 @@
 # backend/middleware.py
 import time
 import logging
-from fastapi import Request, Response
+import re
+from fastapi import Request, Response, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from backend.logging_config import get_request_correlation_id
+from backend.database import current_tenant
+from backend.metrics import start_request_metrics, end_request_metrics
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware to log HTTP requests and responses"""
+    """Middleware to log HTTP requests and responses with tenant metrics"""
 
     def __init__(self, app, exclude_paths: list = None):
         super().__init__(app)
@@ -123,3 +126,55 @@ class PerformanceMonitoringMiddleware(BaseHTTPMiddleware):
         # This is placeholder - actual implementation would use Prometheus/statsd
 
         return response
+
+
+class TenantContextMiddleware(BaseHTTPMiddleware):
+    """Middleware to extract tenant ID from request URL and set tenant context"""
+
+    def __init__(self, app):
+        super().__init__(app)
+        # Regex patterns for extracting chama_id from URLs
+        self.chama_patterns = [
+            re.compile(r'/chamas/(\d+)/?.*'),  # /chamas/{id}/...
+        ]
+
+    async def dispatch(self, request: Request, call_next):
+        # Extract tenant (chama_id) from URL path
+        tenant_id = None
+        path = request.url.path
+
+        for pattern in self.chama_patterns:
+            match = pattern.match(path)
+            if match:
+                tenant_id_str = match.group(1)
+                try:
+                    tenant_id = int(tenant_id_str)
+                    break
+                except ValueError:
+                    # Invalid tenant ID format
+                    pass
+
+        if tenant_id is not None:
+            # Set tenant context and start metrics tracking for this request
+            token = current_tenant.set(tenant_id)
+            start_request_metrics(tenant_id)
+            try:
+                response = await call_next(request)
+                # End metrics tracking with request details
+                end_request_metrics(request.method, path, response.status_code)
+                return response
+            finally:
+                # Clean up context
+                current_tenant.reset(token)
+        else:
+            # No tenant context needed (e.g., user registration, login)
+            # Still track global metrics if needed
+            start_request_metrics()
+            try:
+                response = await call_next(request)
+                end_request_metrics(request.method, path, response.status_code)
+                return response
+            except Exception:
+                # Ensure metrics are recorded even on failure
+                end_request_metrics(request.method, path, 500)
+                raise

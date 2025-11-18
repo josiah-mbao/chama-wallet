@@ -1,12 +1,14 @@
 # backend/rate_limiting.py
 import time
 import asyncio
+import re
 from collections import defaultdict, deque
 from typing import Optional, Dict, Tuple
 import logging
 
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
+from backend.metrics import record_rate_limit_violation
 
 
 class InMemoryRateLimiter:
@@ -106,8 +108,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         else:
             max_requests, window_seconds = self.global_limits[limit_name]
 
-        # Create rate limit key (prefer user ID over IP for authenticated users)
-        rate_limit_key = user_id if user_id else f"ip:{client_ip}"
+        # Create tenant-aware rate limit key
+        chama_id = self._get_chama_id(request.url.path)
+
+        if chama_id is not None:
+            # For chama-specific endpoints, include tenant in rate limit key
+            # This ensures each chama gets its own rate limit quota
+            if user_id:
+                # User within a specific chama: user:123@chama:456
+                rate_limit_key = f"{user_id}@chama:{chama_id}"
+            else:
+                # Anonymous user for a chama: ip:1.2.3.4@chama:456
+                rate_limit_key = f"ip:{client_ip}@chama:{chama_id}"
+        else:
+            # For non-chama endpoints (global operations like user auth, health checks)
+            # Use the original global rate limiting
+            rate_limit_key = user_id if user_id else f"ip:{client_ip}"
 
         # Check rate limit
         is_allowed, retry_after = self.limiter.is_allowed(
@@ -115,9 +131,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
 
         if not is_allowed:
-            # Log rate limit violation
+            # Record rate limit violation in metrics
+            record_rate_limit_violation("request_rate_limit")
+
+            # Log rate limit violation with tenant information
+            tenant_info = f" [TENANT: {chama_id}]" if chama_id else " [GLOBAL]"
             self.logger.warning(
-                f"Rate limit exceeded: {rate_limit_key} - Path: {request.method} {request.url.path} - "
+                f"Rate limit exceeded: {rate_limit_key} - Path: {request.method} {request.url.path}{tenant_info} - "
                 f"Limit: {max_requests}/{window_seconds}s - Retry after: {retry_after:.1f}s",
                 extra={"correlation_id": getattr(request.state, "correlation_id", "unknown")}
             )
@@ -166,6 +186,24 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 return f"user:{request.state.user.id}"
         except AttributeError:
             pass
+
+        return None
+
+    def _get_chama_id(self, path: str) -> Optional[int]:
+        """Extract chama_id from tenant-aware URL paths"""
+        # Regex patterns for extracting chama_id from URLs
+        # This mirrors the patterns used in TenantContextMiddleware
+        chama_patterns = [
+            re.compile(r'/chamas/(\d+)/?.*'),  # /chamas/{id}/...
+        ]
+
+        for pattern in chama_patterns:
+            match = pattern.match(path)
+            if match:
+                try:
+                    return int(match.group(1))
+                except ValueError:
+                    pass
 
         return None
 

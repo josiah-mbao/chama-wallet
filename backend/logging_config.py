@@ -79,7 +79,7 @@ def setup_logging(log_level: str = "INFO", enable_file_logging: bool = True):
 
     file_formatter = logging.Formatter(
         fmt='%(asctime)s - %(name)s - %(levelname)s - %(process)d - %(thread)d - '
-            '[%(filename)s:%(lineno)d] - %(correlation_id)s - %(message)s',
+            '[%(filename)s:%(lineno)d] - %(correlation_id)s - %(tenant_id)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S.%f'
     )
 
@@ -96,10 +96,10 @@ def setup_logging(log_level: str = "INFO", enable_file_logging: bool = True):
     # Create logger for this application
     logger = logging.getLogger("chama_wallet")
 
-    # Apply correlation ID filter immediately for startup logs
-    correlation_filter = CorrelationIdFilter()
+    # Apply tenant correlation filter immediately for startup logs
+    tenant_correlation_filter = TenantCorrelationFilter()
     for handler in root_logger.handlers:
-        handler.addFilter(correlation_filter)
+        handler.addFilter(tenant_correlation_filter)
 
     # Log application startup
     logger.info("=" * 80)
@@ -113,14 +113,31 @@ def setup_logging(log_level: str = "INFO", enable_file_logging: bool = True):
     return logger
 
 
-# Create a filter to add correlation ID to log records
-class CorrelationIdFilter(logging.Filter):
+# Create a filter to add correlation ID and tenant ID to log records
+class TenantCorrelationFilter(logging.Filter):
+    """Filter that adds correlation ID and tenant information to all log records"""
+
     def filter(self, record):
         if not hasattr(record, 'correlation_id'):
             record.correlation_id = get_request_correlation_id()
+
+        # Try to get tenant ID from context vars or thread local storage
+        if not hasattr(record, 'tenant_id'):
+            try:
+                # Import here to avoid circular imports
+                from backend.database import current_tenant
+                tenant_id = current_tenant.get()
+                if tenant_id:
+                    record.tenant_id = f"TENANT:{tenant_id}"
+                else:
+                    record.tenant_id = "GLOBAL"
+            except (ImportError, AttributeError):
+                # Fallback if context not available
+                record.tenant_id = "UNKNOWN"
+
         return True
 
 
-# Apply correlation ID filter to all loggers
-correlation_filter = CorrelationIdFilter()
-logging.getLogger().addFilter(correlation_filter)
+# Apply tenant and correlation filters to all loggers
+tenant_filter = TenantCorrelationFilter()
+logging.getLogger().addFilter(tenant_filter)
