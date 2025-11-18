@@ -17,3 +17,5 @@ pytest-cov
 coverage
 celery
 redis
+prometheus_client
+starlette_exporter

@@ -11,8 +11,13 @@ from backend.routers.members import router as members_router
 from backend.exceptions import ChamaWalletException
 from backend.schemas import ErrorResponse, ValidationErrorResponse, ValidationErrorDetail
 from backend.logging_config import setup_logging
-from backend.middleware import RequestLoggingMiddleware
+from backend.middleware import (
+    RequestLoggingMiddleware,
+    TenantContextMiddleware
+)
 from backend.rate_limiting import RateLimitMiddleware
+from backend.metrics import get_prometheus_metrics, get_metrics_summary
+from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 # Set default SECRET_KEY for local development if not set
 if not os.getenv("SECRET_KEY"):
@@ -28,9 +33,11 @@ app = FastAPI(
     title="Chama Wallet API",
 )
 
-# Add middleware (order matters - rate limiting should be first)
+# Add middleware (order matters - prometheus first, then rate limiting, then request logging, then tenant context)
+app.add_middleware(PrometheusMiddleware, app_name="chama-wallet")
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(TenantContextMiddleware)
 
 # Include all routers
 app.include_router(users_router, prefix="/users", tags=["users"])
@@ -42,6 +49,18 @@ app.include_router(members_router, prefix="/chamas/{chama_id}", tags=["members"]
 @app.get("/", tags=["Health"])
 def read_root():
     return {"message": "Welcome to the Chama Wallet API - Status: Operational"}
+
+
+@app.get("/metrics", tags=["Metrics"])
+def get_metrics():
+    """Prometheus metrics endpoint for monitoring"""
+    return get_prometheus_metrics()
+
+
+@app.get("/metrics/summary", tags=["Metrics"])
+def get_metrics_summary_endpoint():
+    """Human-readable metrics summary for debugging"""
+    return get_metrics_summary()
 
 
 # Global exception handlers
