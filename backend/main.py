@@ -5,10 +5,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from backend.database import get_db
-from backend.routers.users import router as users_router
-from backend.routers.chamas import router as chamas_router
-from backend.routers.members import router as members_router
-from backend.routers.billing import router as billing_router
+from api.v1 import v1_router
+from api.v2 import v2_router
+from api import SUPPORTED_VERSIONS, DEFAULT_VERSION, DEPRECATED_VERSIONS
 from backend.exceptions import ChamaWalletException
 from backend.schemas import ErrorResponse, ValidationErrorResponse, ValidationErrorDetail
 from backend.logging_config import setup_logging
@@ -40,17 +39,47 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(TenantContextMiddleware)
 
-# Include all routers
-app.include_router(users_router, prefix="/users", tags=["users"])
-app.include_router(chamas_router, prefix="/chamas", tags=["chamas"])
-app.include_router(members_router, prefix="/chamas/{chama_id}", tags=["members"])
-app.include_router(billing_router, tags=["billing"])
+# Include versioned API routes
+app.include_router(v1_router, prefix="/api/v1", tags=["v1"])
+app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
+
+# Legacy unversioned routes (deprecated - use /api/v1/ instead)
+# TODO: Migrate all clients to versioned endpoints and remove
+app.include_router(v1_router, prefix="/api", tags=["legacy"])
 # Note: WebSocket router temporarily disabled for CI/CD testing
-# app.include_router(websockets_router, tags=["websockets"])
+# Will be added to v1 when needed: app.include_router(websockets_router, prefix="/ws", tags=["websockets"])
 
 @app.get("/", tags=["Health"])
 def read_root():
-    return {"message": "Welcome to the Chama Wallet API - Status: Operational"}
+    return {
+        "message": "Welcome to the Chama Wallet SaaS API",
+        "version": "1.0.0",
+        "status": "operational",
+        "api_versions": SUPPORTED_VERSIONS,
+        "default_version": DEFAULT_VERSION,
+        "docs": {
+            "v1": "/api/v1/docs",
+            "v2": "/api/v2/docs"
+        }
+    }
+
+
+@app.get("/api-info", tags=["Versioning"])
+def get_api_info():
+    """Get API versioning information and capabilities."""
+    return {
+        "title": "Chama Wallet API",
+        "version": "1.0.0",
+        "supported_versions": SUPPORTED_VERSIONS,
+        "deprecated_versions": DEPRECATED_VERSIONS,
+        "default_version": DEFAULT_VERSION,
+        "versioning_strategy": "URL-based (e.g., /api/v1/endpoint)",
+        "documentation": {
+            "v1": "/api/v1/docs",
+            "v2": "/api/v2/docs"
+        },
+        "migration_guide": "/api/v1/docs"  # TODO: Create migration guide
+    }
 
 
 @app.get("/metrics", tags=["Metrics"])

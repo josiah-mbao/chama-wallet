@@ -128,6 +128,42 @@ class PerformanceMonitoringMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class APIVersioningMiddleware(BaseHTTPMiddleware):
+    """Middleware to add API versioning headers and validate version requests"""
+
+    def __init__(self, app):
+        super().__init__(app)
+        from api import SUPPORTED_VERSIONS, DEFAULT_VERSION
+
+    async def dispatch(self, request: Request, call_next):
+        # Extract API version from URL path
+        path = request.url.path
+        api_version = None
+
+        if path.startswith("/api/v"):
+            # Extract version from /api/v{version}/
+            version_part = path.split("/api/v")[1].split("/")[0]
+            try:
+                api_version = f"v{version_part}"
+            except:
+                api_version = None
+
+        response = await call_next(request)
+
+        # Add versioning headers to response
+        if api_version and api_version in ["v1", "v2"]:
+            response.headers["API-Version"] = api_version
+            response.headers["API-Supported-Versions"] = ",".join(["v1", "v2"])
+        else:
+            # Default headers for non-versioned routes
+            response.headers["API-Version"] = "v1"  # Current default
+            response.headers["API-Supported-Versions"] = ",".join(["v1", "v2"])
+
+        response.headers["API-Deprecated-Versions"] = ""  # None currently deprecated
+
+        return response
+
+
 class TenantContextMiddleware(BaseHTTPMiddleware):
     """Middleware to extract tenant ID from request URL and set tenant context"""
 
@@ -136,6 +172,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         # Regex patterns for extracting chama_id from URLs
         self.chama_patterns = [
             re.compile(r'/chamas/(\d+)/?.*'),  # /chamas/{id}/...
+            re.compile(r'/api/v\d+/chamas/(\d+)/?.*'),  # Versioned chama routes
         ]
 
     async def dispatch(self, request: Request, call_next):
