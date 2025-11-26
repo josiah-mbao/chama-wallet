@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from backend import crud, schemas
-from backend.database import get_db
+from backend.database import get_db, current_tenant
 from backend.models.user import UserRole, User
 from backend.models.membership import Membership, MembershipRole
 from backend.exceptions import AuthenticationError, AuthorizationError, InactiveUserError
@@ -123,3 +123,15 @@ def require_chama_role(chama_id: int, allowed_roles: List[MembershipRole]):
             )
         return membership
     return wrapper
+
+
+# --- Multi-tenant billing dependency ---
+def get_current_tenant_user(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Dependency that returns the current authenticated user with tenant context.
+    For billing operations, tenant context is managed separately.
+
+    This is a wrapper around get_current_user that can be extended for tenant-specific
+    billing operations if needed.
+    """
+    return current_user
