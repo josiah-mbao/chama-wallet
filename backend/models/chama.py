@@ -6,12 +6,13 @@ from backend.database import Base
 
 class Chama(Base):
     __tablename__ = "chamas"
+    __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
     description = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    created_by_user_id = Column(Integer, ForeignKey("users.id"))
+    created_by_user_id = Column(Integer, ForeignKey("public.users.id"))
 
     # Relationships
     memberships = relationship("Membership", back_populates="chama")

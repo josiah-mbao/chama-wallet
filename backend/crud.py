@@ -31,8 +31,8 @@ def create_chama(db: Session, chama: ChamaCreate, owner_id: int) -> Chama:
     db.refresh(db_chama)
 
     # Set up tenant database schema for the new chama
-    # from backend.schema_management import setup_tenant_database
-    # setup_tenant_database(db_chama.id)
+    from backend.schema_management import setup_tenant_database
+    setup_tenant_database(db_chama.id)
 
     # Auto-add owner as member with owner role
     membership = Membership(user_id=owner_id, chama_id=db_chama.id, role="owner")

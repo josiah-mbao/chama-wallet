@@ -45,12 +45,17 @@ admin_engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 # Global sessionmaker for admin operations
 AdminSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=admin_engine)
 
-# For tenant-scoped operations, we create session dynamically
+# For operations that need tenant scoping (when tenant context is set)
 def get_db() -> Generator[Session, None, None]:
-    """Dependency that yields a tenant-scoped SQLAlchemy session."""
-    # This will use the tenant engine based on current_tenant context
-    engine = get_tenant_engine()
-    db = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
+    """Dependency that yields a SQLAlchemy session (public or tenant-scoped)."""
+    tenant_id = current_tenant.get()
+    if tenant_id is not None:
+        # Tenant context is set - use tenant-scoped session
+        engine = get_tenant_engine()
+        db = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
+    else:
+        # No tenant context - use admin session for public schema operations
+        db = AdminSessionLocal()
     try:
         yield db
     finally:

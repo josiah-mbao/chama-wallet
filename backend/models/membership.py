@@ -11,10 +11,11 @@ class MembershipRole(str, enum.Enum):
 
 class Membership(Base):
     __tablename__ = "memberships"
+    __table_args__ = {"schema": "public"}
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    chama_id = Column(Integer, ForeignKey("chamas.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("public.users.id"), nullable=False)
+    chama_id = Column(Integer, ForeignKey("public.chamas.id"), nullable=False)
     role = Column(Enum(MembershipRole), default=MembershipRole.member, nullable=False)
 
     user = relationship("User", back_populates="memberships")
