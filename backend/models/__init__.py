@@ -5,3 +5,4 @@ from . import user
 from . import chama
 from . import membership
 from . import contribution
+from . import subscription
