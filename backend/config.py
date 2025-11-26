@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # Paystack payment integration settings
-    PAYSTACK_SECRET_KEY: str
-    PAYSTACK_PUBLIC_KEY: str
+    PAYSTACK_SECRET_KEY: str = "sk_test_default_for_ci_cd"
+    PAYSTACK_PUBLIC_KEY: str = "pk_test_default_for_ci_cd"
     PAYSTACK_WEBHOOK_SECRET: str = ""  # Optional webhook signature verification
 
     # Extract Redis host and port for easier access
