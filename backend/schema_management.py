@@ -3,8 +3,7 @@ Schema management utilities for multi-tenant chama-wallet.
 Handles schema creation and tenant database operations.
 """
 from sqlalchemy import text
-from backend.database import AdminSessionLocal, get_schema_name
-from backend import models
+from backend.database import AdminSessionLocal, get_schema_name, Base, get_tenant_engine
 import logging
 
 logger = logging.getLogger(__name__)
@@ -60,16 +59,13 @@ def initialize_tenant_schema(tenant_id: int):
     Args:
         tenant_id: The chama ID for which to initialize schema
     """
-    from backend.database import get_tenant_engine
-    from backend.models.chama import Chama
-
     schema_name = get_schema_name(tenant_id)
     engine = get_tenant_engine(tenant_id)
 
     try:
         # Create all tables in the tenant schema
         # SQLAlchemy will create tables with the schema prefix based on search_path
-        models.Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
 
         logger.info(f"Initialized tables for schema {schema_name}")
 
