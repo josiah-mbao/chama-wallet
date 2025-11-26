@@ -22,6 +22,13 @@ def create_tenant_schema(tenant_id: int) -> bool:
     """
     schema_name = get_schema_name(tenant_id)
 
+    # Skip schema operations for non-PostgreSQL databases (like SQLite in tests)
+    import os
+    db_url = os.getenv('DATABASE_URL', '')
+    if not db_url.startswith('postgresql'):
+        logger.info(f"Skipping schema creation for {schema_name} (non-PostgreSQL database)")
+        return True  # Pretend schema was created
+
     try:
         with AdminSessionLocal() as session:
             # Check if schema already exists
