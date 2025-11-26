@@ -8,6 +8,7 @@ from backend.database import get_db
 from backend.routers.users import router as users_router
 from backend.routers.chamas import router as chamas_router
 from backend.routers.members import router as members_router
+from backend.routers.billing import router as billing_router
 from backend.exceptions import ChamaWalletException
 from backend.schemas import ErrorResponse, ValidationErrorResponse, ValidationErrorDetail
 from backend.logging_config import setup_logging
@@ -43,6 +44,7 @@ app.add_middleware(TenantContextMiddleware)
 app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(chamas_router, prefix="/chamas", tags=["chamas"])
 app.include_router(members_router, prefix="/chamas/{chama_id}", tags=["members"])
+app.include_router(billing_router, tags=["billing"])
 # Note: WebSocket router temporarily disabled for CI/CD testing
 # app.include_router(websockets_router, tags=["websockets"])
 

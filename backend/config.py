@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REDIS_URL: str = "redis://redis:6379/0"
 
+    # Paystack payment integration settings
+    PAYSTACK_SECRET_KEY: str
+    PAYSTACK_PUBLIC_KEY: str
+    PAYSTACK_WEBHOOK_SECRET: str = ""  # Optional webhook signature verification
+
     # Extract Redis host and port for easier access
     @property
     def REDIS_HOST(self) -> str:
