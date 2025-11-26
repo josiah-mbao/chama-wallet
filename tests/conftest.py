@@ -25,6 +25,8 @@ import pytest
 celery_mock = MagicMock()
 celery_mock.delay = MagicMock()
 
+
+
 # --- 1. Create a dedicated test engine and session for testing ---
 connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)

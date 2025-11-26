@@ -11,7 +11,7 @@ class UserRole(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {"schema": "public"}
+    __table_args__ = {"schema": "public"} if __import__('os').getenv('DATABASE_URL', '').startswith('postgresql') else {}
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(320), unique=True, index=True, nullable=False)
