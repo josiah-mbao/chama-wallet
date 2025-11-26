@@ -53,10 +53,14 @@ class Subscription(Base):
     __table_args__ = {"schema": "public"} if __import__('os').getenv('DATABASE_URL', '').startswith('postgresql') else {}
 
     id = Column(Integer, primary_key=True, index=True)
-    chama_id = Column(Integer, ForeignKey("public.chamas.id"), nullable=False, unique=True)
+    is_postgres = __import__('os').getenv('DATABASE_URL', '').startswith('postgresql')
+    chama_fk = "public.chamas.id" if is_postgres else "chamas.id"
+    plan_fk = "public.subscription_plans.id" if is_postgres else "subscription_plans.id"
+
+    chama_id = Column(Integer, ForeignKey(chama_fk), nullable=False, unique=True)
 
     # Plan and billing info
-    plan_id = Column(Integer, ForeignKey("public.subscription_plans.id"), nullable=False)
+    plan_id = Column(Integer, ForeignKey(plan_fk), nullable=False)
     status = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.trial)
     billing_cycle = Column(Enum(BillingCycle), default=BillingCycle.monthly)
 
@@ -81,7 +85,9 @@ class Invoice(Base):
     __table_args__ = {"schema": "public"} if __import__('os').getenv('DATABASE_URL', '').startswith('postgresql') else {}
 
     id = Column(Integer, primary_key=True, index=True)
-    subscription_id = Column(Integer, ForeignKey("public.subscriptions.id"), nullable=False)
+    is_postgres = __import__('os').getenv('DATABASE_URL', '').startswith('postgresql')
+    subs_fk = "public.subscriptions.id" if is_postgres else "subscriptions.id"
+    subscription_id = Column(Integer, ForeignKey(subs_fk), nullable=False)
 
     # Invoice details
     invoice_number = Column(String, unique=True, nullable=False)  # e.g., INV-001
@@ -111,7 +117,9 @@ class PaymentMethod(Base):
     __table_args__ = {"schema": "public"} if __import__('os').getenv('DATABASE_URL', '').startswith('postgresql') else {}
 
     id = Column(Integer, primary_key=True, index=True)
-    chama_id = Column(Integer, ForeignKey("public.chamas.id"), nullable=False)
+    is_postgres = __import__('os').getenv('DATABASE_URL', '').startswith('postgresql')
+    chama_fk = "public.chamas.id" if is_postgres else "chamas.id"
+    chama_id = Column(Integer, ForeignKey(chama_fk), nullable=False)
 
     # Payment method details
     type = Column(String, nullable=False)  # card, bank_account, mpesa, paypal
