@@ -46,6 +46,8 @@ app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
 # Legacy unversioned routes (deprecated - use /api/v1/ instead)
 # TODO: Migrate all clients to versioned endpoints and remove
 app.include_router(v1_router, prefix="/api", tags=["legacy"])
+# Direct billing routes for backward compatibility during testing/migration
+app.include_router(v1_router, prefix="", tags=["billing-legacy"])
 # Note: WebSocket router temporarily disabled for CI/CD testing
 # Will be added to v1 when needed: app.include_router(websockets_router, prefix="/ws", tags=["websockets"])
 
