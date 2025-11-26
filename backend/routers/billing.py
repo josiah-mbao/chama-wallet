@@ -29,8 +29,8 @@ from backend.models.subscription import (
 )
 from backend.models.user import User
 from backend.models.chama import Chama
+from backend.models.membership import Membership
 from backend.billing.paystack_client import paystack_client
-from backend.crud import create_chama_member
 
 logger = logging.getLogger(__name__)
 
@@ -79,28 +79,28 @@ async def get_subscription_plan(
 
 # ============ SUBSCRIPTION MANAGEMENT ============
 
-@router.get("/subscription", response_model=Optional[Subscription])
+@router.get("/chamas/{chama_id}/subscription", response_model=Optional[Subscription])
 async def get_chama_subscription(
+    chama_id: int,
     current_user: User = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
-    """Get the current chama's subscription status."""
-    # Get chama ID from the URL path (set by tenant middleware)
-    from backend.database import current_tenant
+    """Get a chama's subscription status."""
+    # Verify user has access to this chama
+    membership = db.query(db.query(Membership).filter(
+        Membership.user_id == current_user.id,
+        Membership.chama_id == chama_id
+    ).exists()).scalar()
 
-    tenant_id = current_tenant.get()
-    if not tenant_id:
+    if not membership:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tenant context not available"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this chama"
         )
 
     subscription = db.query(SubscriptionModel).filter(
-        SubscriptionModel.chama_id == tenant_id
+        SubscriptionModel.chama_id == chama_id
     ).first()
-
-    if not subscription:
-        return None
 
     return subscription
 
