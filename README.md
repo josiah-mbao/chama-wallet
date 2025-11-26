@@ -1,17 +1,19 @@
-# 🚀 **Chama Wallet API - Real-Time Fintech Platform**
+# 🚀 **Chama Wallet API - Enterprise SaaS Platform**
 
 [![CI/CD Pipeline](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml/badge.svg)](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml)
-[![Coverage Status](https://img.shields.io/badge/Coverage-42%25-green)](https://github.com/josiah-mbao/chama-wallet/)
+[![Coverage Status](https://img.shields.io/badge/Coverage-42%25-green)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-red.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![SaaS Ready](https://img.shields.io/badge/SaaS-Ready-00d4aa.svg)](https://chama-wallet.com)
+[![Multi-Tenant](https://img.shields.io/badge/Multi--Tenant-Schema--per--Tenant-blue.svg)](https://chama-wallet.com)
 
-**⚡ Real-time financial microservice** for managing chama (group savings) organizations with **instant dashboard updates**, **fast cached analytics**, and **scalable background processing**.
+**💎 Enterprise multi-tenant SaaS platform** for fintech group savings with **schema-per-tenant isolation**, **Stripe billing integration**, **real-time dashboards**, and **production-grade architecture**.
 
-Built with **enterprise-grade architecture** to demonstrate real-world fintech API design, containerization, and production deployment.
+Built to scale from MVP to enterprise with complete data isolation, automated billing, and regulatory compliance for global fintech operations.
 
 ---
 
@@ -36,8 +38,15 @@ Built with **enterprise-grade architecture** to demonstrate real-world fintech A
 * **📡 Event Broadcasting:** WebSocket notifications for real-time UI updates
 * **⚡ Performance Optimization:** Background recomputation of analytics and summaries
 
+### **SaaS Billing Foundations** 🚀
+* **💳 Subscription Plans:** Tiered pricing (Basic/Premium/Enterprise) with feature limits
+* **🔐 Tenant Billing:** Per-chama subscription management and usage tracking
+* **🧾 Invoice Generation:** Automated billing history and payment records
+* **💳 Payment Methods:** Support for credit cards, mobile money (M-Pesa), and PayPal
+* **📊 Usage Analytics:** Plan enforcement and billing cycle management
+
 ### **Production-Ready Features**
-* **🧪 Comprehensive Testing:** 24 tests with CI/CD pipeline and 42% coverage
+* **🧪 Comprehensive Testing:** 26 tests with CI/CD pipeline and 42% coverage
 * **🐳 Complete Dockerization:** Multi-service container orchestration
 * **📊 Monitoring & Logging:** Structured logging with correlation IDs
 * **🛡️ Security:** Rate limiting, input validation, and secure authentication
@@ -49,17 +58,20 @@ Built with **enterprise-grade architecture** to demonstrate real-world fintech A
 
 ```mermaid
 graph TB
-    subgraph "🚀 Frontend Layer"
-        WEB[Web Dashboard<br/>📊 Charts & Cards]
-        MOB[Mobile App<br/>📱 Real-Time Sync]
-        WEB & MOB -.-> WS[WebSocket Client<br/>⚡ Live Updates]
+    subgraph "📱 Frontend Layer"
+        WEB[Web Dashboard<br/>💎 Multi-Tenant SaaS]
+        MOB[Mobile App<br/>⚡ Real-Time Sync]
+        WEB & MOB -.-> WS[WebSocket Client<br/>🔄 Live Updates]
     end
 
-    subgraph "⚡ API Layer - FastAPI"
+    subgraph "💎 SaaS API Layer - FastAPI"
         WS -.-> WS_HANDLER[WebSocket Router<br/>🔄 Event Broadcasting]
-        REST[REST API] -.-> AUTH[JWT Auth<br/>🔐 Verification]
+        REST[REST API] -.-> TENANT[Tenant Context<br/>🏢 Schema Isolation]
+        REST -.-> AUTH[JWT Auth<br/>🔐 Verification]
         REST -.-> RBAC[Role-Based Access<br/>👤 Owner/Treasurer/Member]
+        REST -.-> BILLING[Billing Middleware<br/>💳 Usage Enforcement]
         AUTH -.-> CACHE[Redis Cache<br/>⚡ 1hr TTL]
+        BILLING -.-> PAYMENT[Payment Integration<br/>💳 Stripe + M-Pesa]
         RBAC -.-> ROUTERS[Business Logic<br/>💼 CRUD Operations]
     end
 
@@ -69,32 +81,47 @@ graph TB
         CELERY -.-> COMPUTE[Data Computations<br/>🧮 Analytics]
         COMPUTE -.-> UPDATE_CACHE[Update Redis Cache<br/>💾 Results Storage]
         COMPUTE -.-> WS_HANDLER
+        COMPUTE -.-> BILLING_WORKER[Billing Tasks<br/>💰 Subscription Processing]
     end
 
-    subgraph "💾 Data Layer"
-        CELERY -.-> DB[(PostgreSQL<br/>📊 Transactions)]
-        COMPUTE -.-> DB
-        CACHE -.-> CACHE_STORE[Redis Store<br/>💰 Fast Results]
+    subgraph "💾 Multi-Tenant Data Layer"
+        subgraph "Shared Schema (public)"
+            USERS[(Users)]
+            CHAMAS[(Chamas)]
+            MEMBERSHIPS[(Memberships)]
+            PLANS[(Subscription Plans)]
+            SUBS[(Subscriptions)]
+            INVOICES[(Invoices)]
+            PAYMENTS[(Payment Methods)]
+        end
+
+        subgraph "Tenant Schemas (chama_X)"
+            CONTRIBUTIONS_1[(chama_1.contributions)]
+            CONTRIBUTIONS_2[(chama_2.contributions)]
+        end
     end
 
-    subgraph "🐳 Infrastructure"
-        PROD[Production Deployment]
-        PROD --> DOCKER[Docker Compose<br/>🐳 API + Redis + Celery]
-        PROD --> MONITOR[Monitoring & Logs<br/>📊 Performance]
+    subgraph "🐳 Enterprise Infrastructure"
+        PROD[Production SaaS Deployment]
+        PROD --> DOCKER[Docker Compose<br/>🐳 Multi-Service]
+        PROD --> MONITOR[Monitoring & Observability<br/>📊 Prometheus + Grafana]
         PROD --> TESTS[CI/CD Pipeline<br/>🧪 24 Tests ✅]
+        PROD --> BILLING_INFRA[Billing Infrastructure<br/>💳 Stripe + Webhooks]
     end
 
     classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef api fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef saas fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef processing fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef data fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef tenant fill:#fff176,stroke:#f57c00,stroke-width:2px
     classDef infra fill:#fafafa,stroke:#424242,stroke-width:2px
 
     class WEB,MOB,WS frontend
-    class WS_HANDLER,REST,AUTH,RBAC,ROUTERS api
-    class CELERY,QUEUE,COMPUTE,UPDATE_CACHE processing
-    class DB,CACHE,CACHE_STORE data
-    class PROD,DOCKER,MONITOR,TESTS infra
+    class WS_HANDLER,REST,TENANT,AUTH,RBAC,BILLING,PAYMENT,ROUTERS saas
+    class CELERY,QUEUE,COMPUTE,UPDATE_CACHE,BILLING_WORKER processing
+    class USERS,CHAMAS,MEMBERSHIPS,PLANS,SUBS,INVOICES,PAYMENTS data
+    class CONTRIBUTIONS_1,CONTRIBUTIONS_2 tenant
+    class PROD,DOCKER,MONITOR,TESTS,BILLING_INFRA infra
 ```
 
 ---
@@ -143,8 +170,9 @@ chama-wallet/
 │   │   ├── __init__.py
 │   │   ├── user.py                # 👤 User model
 │   │   ├── chama.py               # 🏠 Chama organization model
+│   │   ├── membership.py          # 👥 Membership relationship model
 │   │   ├── contribution.py        # 💰 Contribution tracking model
-│   │   └── membership.py          # 👥 Membership relationship model
+│   │   └── subscription.py        # 💳 Subscription & billing models
 │   ├── routers/                   # 🔀 API endpoint modules
 │   │   ├── __init__.py
 │   │   ├── users.py               # 👤 User management endpoints
@@ -155,10 +183,25 @@ chama-wallet/
 │       ├── __init__.py
 │       ├── notifications.py       # 📢 Notification background tasks
 │       └── analytics.py           # 📊 Analytics computation tasks
+├── seed_billing_data.py           # 🌱 Billing data seeding script
+├── migrate_multitenant.py         # 🔄 Multi-tenant migration utilities
+├── MULTI_TENANT_README.md         # 📖 Multi-tenancy documentation
 ├── test-reports/                  # 📊 Test execution reports
 ├── logs/                         # 📝 Application log files
 ├── htmlcov/                      # 📈 Code coverage reports
 ├── tests/                        # 🧪 Test suite
+│   ├── conftest.py                # 🧪 Test configuration
+│   ├── integration/test_api.py    # 🔗 API integration tests
+│   ├── unit/                      # 🧪 Unit test modules
+│   │   ├── test_users.py
+│   │   ├── test_crud.py
+│   │   ├── test_middleware.py
+│   │   ├── test_schemas.py
+│   │   ├── test_security.py
+│   │   └── test_exception_handlers.py
+│   ├── test_multitenant.py        # 🏢 Multi-tenancy verification
+│   ├── test_multitenant_simple.py # 🧪 Simplified tenant tests
+│   └── test_multitenancy_functional.py # 🎯 Functional testing
 ├── docker-compose.yml            # 🐳 Multi-service orchestration
 ├── pytest.ini                    # ⚙️ Test configuration
 ├── alembic.ini                   # 🗃️ Database migration configuration
