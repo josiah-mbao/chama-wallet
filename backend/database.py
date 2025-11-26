@@ -28,12 +28,16 @@ def get_tenant_engine(tenant_id: Optional[int] = None):
 
     schema_name = get_schema_name(tenant_id)
 
-    # Create schema-specific connection
+    # Create schema-specific connection - conditionally add PostgreSQL options
+    connect_args = {}
+    if DATABASE_URL.startswith('postgresql'):
+        # PostgreSQL supports search_path for schema isolation
+        connect_args["options"] = f"-c search_path={schema_name},public"
+
     engine = create_engine(
         DATABASE_URL,
         pool_pre_ping=True,
-        # Set search_path for this connection to the tenant schema
-        connect_args={"options": f"-c search_path={schema_name},public"}
+        connect_args=connect_args
     )
 
     return engine
