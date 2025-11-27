@@ -247,7 +247,7 @@ class TestBillingModels:
         Chama.__table__.create(bind=engine)
 
         # Create test data
-        chama = Chama(id=1, name="Test Chama", owner_id=1)
+        chama = Chama(id=1, name="Test Chama", created_by_user_id=1)
         plan = SubscriptionPlan(
             id=1, name="Basic Plan", plan_type="basic",
             price_monthly=9.99, price_yearly=99.99,
