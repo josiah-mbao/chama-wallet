@@ -30,8 +30,7 @@ class TestBillingEdgeCases:
         user = User(
             email=f"test-{pytest.importorskip('uuid').uuid4()}@example.com",
             hashed_password="hashed_password",
-            is_active=True,
-            tenant_id=1
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
