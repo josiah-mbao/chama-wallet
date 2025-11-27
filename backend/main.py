@@ -39,6 +39,9 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(TenantContextMiddleware)
 
+# Import billing router directly for backward compatibility
+from backend.routers.billing import router as billing_router
+
 # Include versioned API routes
 app.include_router(v1_router, prefix="/api/v1", tags=["v1"])
 app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
@@ -46,8 +49,10 @@ app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
 # Legacy unversioned routes (deprecated - use /api/v1/ instead)
 # TODO: Migrate all clients to versioned endpoints and remove
 app.include_router(v1_router, prefix="/api", tags=["legacy"])
+
 # Direct billing routes for backward compatibility during testing/migration
-app.include_router(v1_router, prefix="", tags=["billing-legacy"])
+# Mount billing router directly at root to ensure /billing/* endpoints work
+app.include_router(billing_router, tags=["billing-legacy"])
 # Note: WebSocket router temporarily disabled for CI/CD testing
 # Will be added to v1 when needed: app.include_router(websockets_router, prefix="/ws", tags=["websockets"])
 
