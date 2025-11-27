@@ -36,7 +36,7 @@ class TestPaystackClient:
             'PAYSTACK_PUBLIC_KEY': 'pk_live_abcd1234'
         }):
             client = PaystackClient()
-            assert client.is_test_mode is True  # Because of 'test' in key
+            assert client.is_test_mode is False  # Live keys should not be test mode
 
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_create_customer(self, mock_request, paystack_client):
