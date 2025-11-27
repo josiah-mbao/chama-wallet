@@ -61,6 +61,7 @@ class TestBillingEdgeCases:
         db_session.commit()
         return membership
 
+    @pytest.mark.asyncio
     async def test_get_subscription_plan_not_found(self, client, test_user):
         """Test getting a non-existent subscription plan."""
         # This should return 404
@@ -69,6 +70,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "Subscription plan not found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_get_subscription_plan_inactive(self, client, test_user, db_session):
         """Test getting an inactive subscription plan."""
         # Create inactive plan
@@ -90,6 +92,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "Subscription plan not found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_create_subscription_duplicate(self, client, test_user, test_chama, test_membership, db_session):
         """Test creating subscription when chama already has one."""
         # Create existing subscription
@@ -124,6 +127,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "already has an active subscription" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_create_subscription_invalid_plan(self, client, test_user, test_chama, test_membership):
         """Test creating subscription with invalid plan ID."""
         response = await client.post(
@@ -134,6 +138,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "Subscription plan not found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_update_subscription_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test updating subscription when none exists."""
         response = await client.put(
@@ -144,6 +149,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "No active subscription found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_update_subscription_invalid_plan(self, client, test_user, test_chama, test_membership, db_session):
         """Test updating subscription to invalid plan."""
         # Create subscription
@@ -178,6 +184,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "New subscription plan not found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_cancel_subscription_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test canceling subscription when none exists."""
         response = await client.delete("/billing/subscription")
@@ -185,6 +192,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "No active subscription found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_initialize_payment_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test initializing payment without active subscription."""
         response = await client.post(
@@ -194,6 +202,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "No active subscription found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_get_usage_stats_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test getting usage stats without subscription."""
         response = await client.get("/billing/usage")
@@ -201,6 +210,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "No active subscription found" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_get_chama_subscription_no_access(self, client, test_user, db_session):
         """Test accessing subscription without membership."""
         # Create another chama that user doesn't belong to
@@ -217,6 +227,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert "You do not have access to this chama" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_paystack_client_error_handling(self, client, test_user, test_chama, test_membership, db_session):
         """Test handling Paystack API errors."""
         # Create subscription setup
@@ -253,6 +264,7 @@ class TestBillingEdgeCases:
             data = response.json()
             assert "Payment initialization failed" in data["detail"]
 
+    @pytest.mark.asyncio
     async def test_webhook_processing_invalid_data(self, client):
         """Test webhook processing with invalid data."""
         response = await client.post(
@@ -264,6 +276,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert data["status"] == "success"  # Still success for webhook acknowledgment
 
+    @pytest.mark.asyncio
     async def test_subscription_plan_pagination_limits(self, client, test_user, db_session):
         """Test subscription plan pagination limits."""
         # Create multiple plans
@@ -295,6 +308,7 @@ class TestBillingEdgeCases:
         data = response.json()
         assert len(data) <= 2
 
+    @pytest.mark.asyncio
     async def test_payment_method_validation(self, client, test_user, test_chama, test_membership):
         """Test payment method input validation."""
         # Test with invalid card number
@@ -311,6 +325,7 @@ class TestBillingEdgeCases:
         # For now just test that endpoint accepts the request
         assert response.status_code in [200, 422]  # Either success or validation error
 
+    @pytest.mark.asyncio
     async def test_tenant_context_missing(self, client):
         """Test endpoints without tenant context."""
         # This would require mocking the tenant context to be None
