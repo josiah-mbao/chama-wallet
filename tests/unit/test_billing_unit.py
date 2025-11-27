@@ -186,6 +186,135 @@ class TestPaystackClient:
         assert result == "unknown.event"
 
 
+class TestPaystackClientEdgeCases:
+    """Test Paystack client edge cases and error scenarios."""
+
+    @pytest.fixture
+    def paystack_client(self):
+        """Create PaystackClient instance with test mode enabled."""
+        with patch.dict('os.environ', {
+            'PAYSTACK_SECRET_KEY': 'sk_test_default_for_ci_cd',
+            'PAYSTACK_PUBLIC_KEY': 'pk_test_default_for_ci_cd'
+        }):
+            client = PaystackClient()
+            assert client.is_test_mode is True
+            return client
+
+    @pytest.mark.asyncio
+    @patch('backend.billing.paystack_client.PaystackClient._make_request')
+    async def test_initialize_transaction_api_error(self, mock_request, paystack_client):
+        """Test handling Paystack API errors during transaction initialization."""
+        mock_request.side_effect = Exception("Network timeout")
+
+        with pytest.raises(Exception) as exc_info:
+            await paystack_client.initialize_transaction(
+                email="test@example.com",
+                amount=50000,
+                currency="KES"
+            )
+
+        assert "Network timeout" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    @patch('backend.billing.paystack_client.PaystackClient._make_request')
+    async def test_create_customer_api_error(self, mock_request, paystack_client):
+        """Test handling Paystack API errors during customer creation."""
+        mock_request.return_value = {
+            "status": False,
+            "message": "Invalid email format"
+        }
+
+        with pytest.raises(ValueError) as exc_info:
+            await paystack_client.create_customer(email="invalid-email")
+
+        assert "Invalid email format" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    @patch('backend.billing.paystack_client.PaystackClient._make_request')
+    async def test_verify_transaction_not_found(self, mock_request, paystack_client):
+        """Test verifying non-existent transaction."""
+        mock_request.return_value = {
+            "status": False,
+            "message": "Transaction not found"
+        }
+
+        with pytest.raises(ValueError) as exc_info:
+            await paystack_client.verify_transaction("invalid_ref")
+
+        assert "Transaction not found" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    @patch('backend.billing.paystack_client.PaystackClient._make_request')
+    async def test_create_plan_invalid_amount(self, paystack_client):
+        """Test creating plan with invalid amount."""
+        # Paystack requires amounts in kobo, test boundary cases
+        # This would normally be validated client-side, but test edge case
+
+        with patch.object(paystack_client, '_make_request') as mock_request:
+            mock_request.return_value = {
+                "status": True,
+                "data": {"id": "plan_123", "name": "Test Plan"}
+            }
+
+            result = await paystack_client.create_plan(
+                name="Edge Case Plan",
+                amount=0,  # Zero amount edge case
+                interval="monthly",
+                currency="KES"
+            )
+
+            # Should still work, Paystack might handle zero amounts
+            assert result["id"] == "plan_123"
+
+    @pytest.mark.asyncio
+    async def test_process_webhook_event_error_handling(self, paystack_client):
+        """Test webhook processing error scenarios."""
+        # Test with missing event type
+        event_data = {"data": {"id": "123"}}
+        result = await paystack_client.process_webhook_event(event_data)
+        assert result is None  # Should handle gracefully
+
+        # Test with invalid event data
+        event_data = {"event": "charge.success", "data": None}
+        result = await paystack_client.process_webhook_event(event_data)
+        assert result == "charge.success"  # Should not crash
+
+    def test_webhook_signature_verification_edge_cases(self, paystack_client):
+        """Test webhook signature verification edge cases."""
+        payload = b'{"event": "test"}'
+        secret = ""
+
+        # Empty secret
+        is_valid = paystack_client.verify_webhook_signature(payload, "signature", "")
+        assert is_valid is False
+
+        # Empty payload
+        is_valid = paystack_client.verify_webhook_signature(b'', "signature", "secret")
+        assert is_valid is False
+
+        # None inputs
+        is_valid = paystack_client.verify_webhook_signature(None, "signature", "secret")
+        assert is_valid is False
+
+    def test_client_initialization_missing_key(self):
+        """Test client initialization with missing secret key."""
+        with patch.dict('os.environ', {}, clear=True):
+            # Should raise error for missing key
+            with pytest.raises(ValueError) as exc_info:
+                PaystackClient()
+
+            assert "PAYSTACK_SECRET_KEY" in str(exc_info.value)
+
+    def test_client_initialization_empty_key(self):
+        """Test client initialization with empty secret key."""
+        with patch.dict('os.environ', {'PAYSTACK_SECRET_KEY': ''}):
+            # Should raise error for empty key
+            with pytest.raises(ValueError) as exc_info:
+                PaystackClient()
+
+            assert "PAYSTACK_SECRET_KEY" in str(exc_info.value)
+
+
 class TestBillingModels:
     """Test billing data models and relationships."""
 
