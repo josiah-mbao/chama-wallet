@@ -19,12 +19,6 @@ class TestBillingEdgeCases:
     """Test edge cases and error scenarios in billing functionality."""
 
     @pytest.fixture
-    def client(self):
-        """Create test client."""
-        from httpx import Client
-        return Client(app=app, base_url="http://testserver")
-
-    @pytest.fixture
     def test_user(self, db_session: Session):
         """Create a test user."""
         user = User(
