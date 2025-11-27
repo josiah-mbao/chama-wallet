@@ -38,6 +38,7 @@ class TestPaystackClient:
             client = PaystackClient()
             assert client.is_test_mode is False  # Live keys should not be test mode
 
+    @pytest.mark.asyncio
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_create_customer(self, mock_request, paystack_client):
         """Test creating a Paystack customer."""
@@ -61,6 +62,7 @@ class TestPaystackClient:
         assert result["email"] == "test@example.com"
         mock_request.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_create_plan_kes_currency(self, mock_request, paystack_client):
         """Test creating a subscription plan in KES."""
@@ -86,6 +88,7 @@ class TestPaystackClient:
         assert result["amount"] == 100000
         mock_request.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_initialize_transaction_kes(self, mock_request, paystack_client):
         """Test initializing payment transaction in KES."""
@@ -111,6 +114,7 @@ class TestPaystackClient:
         assert "callback_url" in result  # Should be included in URL
         mock_request.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_verify_transaction(self, mock_request, paystack_client):
         """Test verifying transaction status."""
@@ -156,6 +160,7 @@ class TestPaystackClient:
         is_valid = paystack_client.verify_webhook_signature(payload, invalid_signature, secret)
         assert is_valid is False
 
+    @pytest.mark.asyncio
     @patch('backend.billing.paystack_client.PaystackClient._handle_invoice_created')
     async def test_process_webhook_invoice_create(self, mock_handler, paystack_client):
         """Test processing invoice.create webhook event."""
@@ -169,6 +174,7 @@ class TestPaystackClient:
         assert result == "invoice.create"
         mock_handler.assert_called_once_with(event_data["data"])
 
+    @pytest.mark.asyncio
     async def test_process_webhook_unknown_event(self, paystack_client):
         """Test processing unknown webhook event."""
         event_data = {
