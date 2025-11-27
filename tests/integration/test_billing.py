@@ -81,7 +81,7 @@ class TestBillingSubscriptions:
         user = User(
             email="test@example.com",
             hashed_password="hashed_password",
-            role="user",
+            role="member",  # Use valid UserRole enum value
             is_active=True
         )
         db_session.add(user)
@@ -315,7 +315,7 @@ def authenticated_user(client, db_session):
     user = User(
         email="test@example.com",
         hashed_password="hashed_password",
-        role="user",
+        role="member",  # Use valid UserRole enum value
         is_active=True
     )
     db_session.add(user)
