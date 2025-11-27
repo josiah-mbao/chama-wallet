@@ -120,15 +120,19 @@ class TestBillingEdgeCases:
         db_session.add(subscription)
         db_session.commit()
 
-        # Try to create another subscription
-        response = client.post(
-            "/billing/subscription",
-            json={"plan_id": plan.id, "billing_cycle": "monthly"},
-            headers={"Authorization": f"Bearer {token}"}
-        )
-        assert response.status_code == 409
-        data = response.json()
-        assert "already has an active subscription" in data["detail"]
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            # Try to create another subscription
+            response = client.post(
+                "/billing/subscription",
+                json={"plan_id": plan.id, "billing_cycle": "monthly"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 409
+            data = response.json()
+            assert "already has an active subscription" in data["detail"]
 
     def test_create_subscription_invalid_plan(self, client, test_user, test_chama, test_membership):
         """Test creating subscription with invalid plan ID."""
