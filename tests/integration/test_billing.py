@@ -6,10 +6,11 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
 from unittest.mock import patch, AsyncMock
+from backend.security import get_password_hash
 
 from backend.main import app
 from backend.database import get_db
-from backend.models.user import User
+from backend.models.user import User, UserRole
 from backend.models.chama import Chama
 from backend.models.membership import Membership
 from backend.models.subscription import SubscriptionPlan, Subscription
@@ -23,13 +24,20 @@ class TestBillingEdgeCases:
         """Create a test user."""
         user = User(
             email=f"test-{pytest.importorskip('uuid').uuid4()}@example.com",
-            hashed_password="hashed_password",
+            hashed_password=get_password_hash("testpass"),
+            role=UserRole.owner,
             is_active=True
         )
         db_session.add(user)
         db_session.commit()
         db_session.refresh(user)
         return user
+
+    def login_get_token(self, client, email, password):
+        """Helper to get authentication token."""
+        response = client.post("/users/token", data={"username": email, "password": password})
+        assert response.status_code == 200
+        return response.json()["access_token"]
 
     @pytest.fixture
     def test_chama(self, db_session: Session, test_user: User):
@@ -86,6 +94,9 @@ class TestBillingEdgeCases:
 
     def test_create_subscription_duplicate(self, client, test_user, test_chama, test_membership, db_session):
         """Test creating subscription when chama already has one."""
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
         # Create existing subscription
         plan = SubscriptionPlan(
             name="Test Plan",
@@ -112,7 +123,8 @@ class TestBillingEdgeCases:
         # Try to create another subscription
         response = client.post(
             "/billing/subscription",
-            json={"plan_id": plan.id, "billing_cycle": "monthly"}
+            json={"plan_id": plan.id, "billing_cycle": "monthly"},
+            headers={"Authorization": f"Bearer {token}"}
         )
         assert response.status_code == 409
         data = response.json()
