@@ -69,7 +69,7 @@ class TestBillingSubscriptions:
 
     def test_get_subscription_no_auth(self, client):
         """Test getting subscription without authentication."""
-        response = client.get("/chamas/1/subscription")
+        response = client.get("/billing/chamas/1/subscription")
         assert response.status_code == 401
 
     @pytest.fixture
@@ -105,7 +105,7 @@ class TestBillingSubscriptions:
 
     def test_get_subscription_no_chama_access(self, authenticated_user, client, db_session):
         """Test getting subscription for chama user doesn't have access to."""
-        response = client.get("/chamas/999/subscription")
+        response = client.get("/billing/chamas/999/subscription")
         assert response.status_code == 403  # Forbidden
 
     def test_subscription_flow_complete(self, authenticated_user, client, db_session):
@@ -155,7 +155,7 @@ class TestBillingSubscriptions:
                 mock_create_customer.assert_called_once()
 
             # Test: Get subscription
-            response = client.get(f"/chamas/{chama.id}/subscription")
+            response = client.get(f"/billing/chamas/{chama.id}/subscription")
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "trial"
@@ -297,7 +297,7 @@ class TestBillingSecurity:
         db_session.commit()
 
         # User should be able to access their own chama
-        response = client.get("/chamas/1/subscription")
+        response = client.get("/billing/chamas/1/subscription")
         # In a real multi-tenant setup, this might require additional auth checks
         assert response.status_code in [200, 404]  # 200 if subscription exists, 404 if not
 
