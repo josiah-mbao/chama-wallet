@@ -13,11 +13,11 @@ from sqlalchemy.orm import Session
 def seed_subscription_plans(db: Session):
     """Create default subscription plans"""
 
-    # Check if plans already exist
-    existing_plans = db.query(SubscriptionPlan).count()
-    if existing_plans > 0:
-        print("✅ Subscription plans already exist, skipping seeding")
-        return
+    # Check if plans already exist - return them if they do
+    existing_plans = db.query(SubscriptionPlan).all()
+    if existing_plans:
+        print("✅ Subscription plans already exist, returning existing plans")
+        return existing_plans
 
     plans = [
         {
