@@ -375,18 +375,18 @@ async def initialize_payment(
             detail="Tenant context not available"
         )
 
+    # Verify chama has active subscription
+    subscription = db.query(SubscriptionModel).filter(
+        SubscriptionModel.chama_id == tenant_id
+    ).first()
+
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active subscription found"
+        )
+
     try:
-        # Verify chama has active subscription
-        subscription = db.query(SubscriptionModel).filter(
-            SubscriptionModel.chama_id == tenant_id
-        ).first()
-
-        if not subscription:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No active subscription found"
-            )
-
         # Initialize transaction with Paystack (amount needs to be in kobo)
         amount_kobo = amount * 100  # Convert KES to kobo
 
@@ -451,7 +451,8 @@ async def get_usage_stats(
     ).first()
 
     # Calculate current usage (simplified)
-    member_count = db.query(db.func.count()).select_from(db.query(Chama).filter(Chama.id == tenant_id).subquery()).scalar() or 0
+    from sqlalchemy import func
+    member_count = db.query(func.count()).select_from(db.query(Chama).filter(Chama.id == tenant_id).subquery()).scalar() or 0
 
     # In a real implementation, you'd count contributions from tenant schema
     contribution_count = 0  # Placeholder
