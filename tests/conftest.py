@@ -94,6 +94,7 @@ def client(db_session, mock_celery_tasks):
     from backend.routers.users import router as users_router
     from backend.routers.chamas import router as chamas_router
     from backend.routers.members import router as members_router
+    from backend.routers.billing import router as billing_router
 
 
     test_app = FastAPI(title="Test Chama Wallet API")
@@ -103,6 +104,7 @@ def client(db_session, mock_celery_tasks):
     test_app.include_router(users_router, prefix="/users", tags=["users"])
     test_app.include_router(chamas_router, prefix="/chamas", tags=["chamas"])
     test_app.include_router(members_router, prefix="/chamas/{chama_id}", tags=["members"])
+    test_app.include_router(billing_router, tags=["billing"])
 
     def override_get_db():
         yield db_session
