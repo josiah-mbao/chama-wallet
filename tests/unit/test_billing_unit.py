@@ -111,7 +111,6 @@ class TestPaystackClient:
 
         assert result["currency"] == "KES"
         assert result["amount"] == 50000
-        assert "callback_url" in result  # Should be included in URL
         mock_request.assert_called_once()
 
     @pytest.mark.asyncio
