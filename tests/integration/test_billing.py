@@ -42,9 +42,11 @@ class TestBillingEdgeCases:
     @pytest.fixture
     def test_chama(self, db_session: Session, test_user: User):
         """Create a test chama."""
-        # Use a very high ID to avoid conflicts with existing data
+        # Use UUID to generate a truly unique ID that won't conflict
+        import uuid
+        unique_id = abs(hash(str(uuid.uuid4()))) % 1000000000  # Large unique integer
         chama = Chama(
-            id=9999,  # Use very high ID to avoid conflicts
+            id=unique_id,
             name="Test Chama Edge Cases",
             created_by_user_id=test_user.id
         )
