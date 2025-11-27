@@ -238,7 +238,7 @@ class TestBillingUsage:
 
         # Set up test data
         user = authenticated_user
-        chama = Chama(id=1, name="Usage Test Chama", created_by_user_id=user.id)
+        chama = Chama(id=100, name="Usage Test Chama", created_by_user_id=user.id)
         membership = Membership(
             user_id=user.id,
             chama_id=chama.id,
