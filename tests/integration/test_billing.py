@@ -42,8 +42,9 @@ class TestBillingEdgeCases:
     @pytest.fixture
     def test_chama(self, db_session: Session, test_user: User):
         """Create a test chama."""
+        # Use a very high ID to avoid conflicts with existing data
         chama = Chama(
-            id=101,  # Use high ID to avoid conflicts
+            id=9999,  # Use very high ID to avoid conflicts
             name="Test Chama Edge Cases",
             created_by_user_id=test_user.id
         )
