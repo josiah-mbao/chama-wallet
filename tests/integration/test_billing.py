@@ -24,6 +24,8 @@ class TestBillingEdgeCases:
         """Create a test user."""
         user = User(
             email=f"test-{pytest.importorskip('uuid').uuid4()}@example.com",
+            first_name="Test",
+            last_name="User",
             hashed_password=get_password_hash("testpass"),
             role=UserRole.owner,
             is_active=True
