@@ -16,6 +16,8 @@ class TokenData(BaseModel):
 # --- User Schemas ---
 class UserBase(BaseModel):
     email: EmailStr
+    first_name: str
+    last_name: str
 
 class UserCreate(UserBase):
     password: str
