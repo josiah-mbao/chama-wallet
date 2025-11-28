@@ -15,12 +15,14 @@ def init_db(db_session):
     db_session.commit()
 
     # Create users
-    owner = User(email="owner@test.com", hashed_password=get_password_hash("ownerpass"),
+    owner = User(email="owner@test.com", first_name="Test", last_name="Owner",
+                hashed_password=get_password_hash("ownerpass"),
                 role=UserRole.owner, is_active=True)
-    treasurer = User(email="treasurer@test.com",
+    treasurer = User(email="treasurer@test.com", first_name="Test", last_name="Treasurer",
                     hashed_password=get_password_hash("treasurerpass"),
                     role=UserRole.treasurer, is_active=True)
-    member = User(email="member@test.com", hashed_password=get_password_hash("memberpass"),
+    member = User(email="member@test.com", first_name="Test", last_name="Member",
+                 hashed_password=get_password_hash("memberpass"),
                  role=UserRole.member, is_active=True)
     db_session.add_all([owner, treasurer, member])
     db_session.commit()
