@@ -1,12 +1,13 @@
 # tests/conftest.py
 import os
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# --- 0. Use a file-based SQLite DB for tests ---
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+# --- 0. Use in-memory SQLite DB for tests (better isolation) ---
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test_secret_key_for_testing"
 # Disable Redis for tests (will use fake connection that fails gracefully)
 os.environ["REDIS_URL"] = "redis://localhost:9999/0"  # Non-existent Redis URL
@@ -20,12 +21,6 @@ from backend.config_test import settings
 # Mock Celery tasks for tests to avoid Redis connections
 from unittest.mock import MagicMock, patch
 import pytest
-
-# Mock all Celery task delay calls
-celery_mock = MagicMock()
-celery_mock.delay = MagicMock()
-
-
 
 # --- 1. Create a dedicated test engine and session for testing ---
 connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
@@ -44,25 +39,23 @@ class NoOpRateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         return response
 
-# --- 2. Create tables once per test session ---
-@pytest.fixture(scope="session", autouse=True)
+# --- 2. Create tables for each test (better isolation) ---
+@pytest.fixture(scope="function", autouse=True)
 def setup_database():
-    """Create all tables before tests and drop them after session ends."""
+    """Create all tables before each test and drop them after."""
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
-    # remove test.db file after tests
-    if "sqlite" in settings.DATABASE_URL and os.path.exists("./test.db"):
-        os.remove("./test.db")
 
-# --- 3. Provide a fresh DB session per test ---
+# --- 3. Provide a fresh DB session per test with rollback ---
 @pytest.fixture(scope="function")
 def db_session():
+    """Provide a database session that rolls back after each test."""
     db = TestingSessionLocal()
     try:
         yield db
     finally:
-        db.commit()  # Commit to preserve data for integration tests
+        db.rollback()  # Rollback to ensure test isolation
         db.close()
 
 # --- 4. Mock Celery tasks to avoid Redis connections ---

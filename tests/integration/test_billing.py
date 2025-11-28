@@ -42,12 +42,13 @@ class TestBillingEdgeCases:
     @pytest.fixture
     def test_chama(self, db_session: Session, test_user: User):
         """Create a test chama."""
-        # Use UUID to generate a truly unique ID that won't conflict
+        # Use UUID to generate a truly unique ID and name that won't conflict
         import uuid
         unique_id = abs(hash(str(uuid.uuid4()))) % 1000000000  # Large unique integer
+        unique_name = f"Test Chama Edge Cases {unique_id}"
         chama = Chama(
             id=unique_id,
-            name="Test Chama Edge Cases",
+            name=unique_name,
             created_by_user_id=test_user.id
         )
         db_session.add(chama)
@@ -139,26 +140,45 @@ class TestBillingEdgeCases:
 
     def test_create_subscription_invalid_plan(self, client, test_user, test_chama, test_membership):
         """Test creating subscription with invalid plan ID."""
-        response = client.post(
-            "/billing/subscription",
-            json={"plan_id": 99999, "billing_cycle": "monthly"}
-        )
-        assert response.status_code == 404
-        data = response.json()
-        assert "Subscription plan not found" in data["detail"]
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            response = client.post(
+                "/billing/subscription",
+                json={"plan_id": 99999, "billing_cycle": "monthly"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 404
+            data = response.json()
+            assert "Subscription plan not found" in data["detail"]
 
     def test_update_subscription_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test updating subscription when none exists."""
-        response = client.put(
-            "/billing/subscription",
-            json={"billing_cycle": "yearly"}
-        )
-        assert response.status_code == 404
-        data = response.json()
-        assert "No active subscription found" in data["detail"]
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            response = client.put(
+                "/billing/subscription",
+                json={"billing_cycle": "yearly"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 404
+            data = response.json()
+            assert "No active subscription found" in data["detail"]
 
     def test_update_subscription_invalid_plan(self, client, test_user, test_chama, test_membership, db_session):
         """Test updating subscription to invalid plan."""
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
         # Create subscription
         plan = SubscriptionPlan(
             name="Test Plan",
@@ -182,40 +202,76 @@ class TestBillingEdgeCases:
         db_session.add(subscription)
         db_session.commit()
 
-        # Try to update to invalid plan
-        response = client.put(
-            "/billing/subscription",
-            json={"plan_id": 99999}
-        )
-        assert response.status_code == 404
-        data = response.json()
-        assert "New subscription plan not found" in data["detail"]
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            # Try to update to invalid plan
+            response = client.put(
+                "/billing/subscription",
+                json={"plan_id": 99999},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 404
+            data = response.json()
+            assert "New subscription plan not found" in data["detail"]
 
     def test_cancel_subscription_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test canceling subscription when none exists."""
-        response = client.delete("/billing/subscription")
-        assert response.status_code == 404
-        data = response.json()
-        assert "No active subscription found" in data["detail"]
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            response = client.delete(
+                "/billing/subscription",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 404
+            data = response.json()
+            assert "No active subscription found" in data["detail"]
 
     def test_initialize_payment_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test initializing payment without active subscription."""
-        response = client.post(
-            "/billing/initialize-payment?amount=1000&description=Test payment"
-        )
-        assert response.status_code == 400
-        data = response.json()
-        assert "No active subscription found" in data["detail"]
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            response = client.post(
+                "/billing/initialize-payment?amount=1000&description=Test payment",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 400
+            data = response.json()
+            assert "No active subscription found" in data["detail"]
 
     def test_get_usage_stats_no_subscription(self, client, test_user, test_chama, test_membership):
         """Test getting usage stats without subscription."""
-        response = client.get("/billing/usage")
-        assert response.status_code == 404
-        data = response.json()
-        assert "No active subscription found" in data["detail"]
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            response = client.get(
+                "/billing/usage",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            assert response.status_code == 404
+            data = response.json()
+            assert "No active subscription found" in data["detail"]
 
     def test_get_chama_subscription_no_access(self, client, test_user, db_session):
         """Test accessing subscription without membership."""
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
         # Create another chama that user doesn't belong to
         other_chama = Chama(
             id=102,
@@ -225,13 +281,19 @@ class TestBillingEdgeCases:
         db_session.add(other_chama)
         db_session.commit()
 
-        response = client.get(f"/billing/chamas/{other_chama.id}/subscription")
+        response = client.get(
+            f"/billing/chamas/{other_chama.id}/subscription",
+            headers={"Authorization": f"Bearer {token}"}
+        )
         assert response.status_code == 403
         data = response.json()
         assert "You do not have access to this chama" in data["detail"]
 
     def test_paystack_client_error_handling(self, client, test_user, test_chama, test_membership, db_session):
         """Test handling Paystack API errors."""
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
         # Create subscription setup
         plan = SubscriptionPlan(
             name="Test Plan",
@@ -255,16 +317,21 @@ class TestBillingEdgeCases:
         db_session.add(subscription)
         db_session.commit()
 
-        # Mock Paystack API failure
-        with patch('backend.billing.paystack_client.paystack_client.initialize_transaction') as mock_init:
-            mock_init.side_effect = Exception("Paystack API unavailable")
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
 
-            response = client.post(
-                "/billing/initialize-payment?amount=1000&description=Test payment"
-            )
-            assert response.status_code == 500
-            data = response.json()
-            assert "Payment initialization failed" in data["detail"]
+            # Mock Paystack API failure
+            with patch('backend.billing.paystack_client.paystack_client.initialize_transaction') as mock_init:
+                mock_init.side_effect = Exception("Paystack API unavailable")
+
+                response = client.post(
+                    "/billing/initialize-payment?amount=1000&description=Test payment",
+                    headers={"Authorization": f"Bearer {token}"}
+                )
+                assert response.status_code == 500
+                data = response.json()
+                assert "Payment initialization failed" in data["detail"]
 
     def test_webhook_processing_invalid_data(self, client):
         """Test webhook processing with invalid data."""
@@ -310,22 +377,33 @@ class TestBillingEdgeCases:
 
     def test_payment_method_validation(self, client, test_user, test_chama, test_membership):
         """Test payment method input validation."""
-        # Test with invalid card number
-        response = client.post(
-            "/billing/payment-methods",
-            json={
-                "type": "card",
-                "provider": "visa",
-                "card_number": "123",  # Too short
-                "phone_number": None
-            }
-        )
-        # Should handle gracefully - in real app would validate
-        # For now just test that endpoint accepts the request
-        assert response.status_code in [200, 422]  # Either success or validation error
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
 
-    def test_tenant_context_missing(self, client):
+        # Mock tenant context for multi-tenant system
+        with patch('backend.database.current_tenant') as mock_tenant:
+            mock_tenant.get.return_value = test_chama.id
+
+            # Test with invalid card number
+            response = client.post(
+                "/billing/payment-methods",
+                json={
+                    "type": "card",
+                    "provider": "visa",
+                    "card_number": "123",  # Too short
+                    "phone_number": None
+                },
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            # Should handle gracefully - in real app would validate
+            # For now just test that endpoint accepts the request
+            assert response.status_code in [200, 422]  # Either success or validation error
+
+    def test_tenant_context_missing(self, client, test_user):
         """Test endpoints without tenant context."""
+        # Get authentication token
+        token = self.login_get_token(client, test_user.email, "testpass")
+
         # This would require mocking the tenant context to be None
         # Most endpoints check for tenant context
         response = client.get("/billing/plans")
@@ -333,5 +411,8 @@ class TestBillingEdgeCases:
         assert response.status_code == 200
 
         # But tenant-specific endpoints should fail
-        response = client.get("/billing/chamas/1/subscription")
+        response = client.get(
+            "/billing/chamas/1/subscription",
+            headers={"Authorization": f"Bearer {token}"}
+        )
         assert response.status_code in [400, 403]  # Either tenant context error or access denied
