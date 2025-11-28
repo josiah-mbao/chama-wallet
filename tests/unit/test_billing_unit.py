@@ -294,11 +294,14 @@ class TestPaystackClientEdgeCases:
     def test_client_initialization_missing_key(self):
         """Test client initialization with missing secret key."""
         with patch.dict('os.environ', {}, clear=True):
-            # Should raise error for missing key
-            with pytest.raises(ValueError) as exc_info:
-                PaystackClient()
+            with patch('os.getenv') as mock_getenv:
+                # Mock os.getenv to return None for PAYSTACK_SECRET_KEY
+                mock_getenv.return_value = None
+                # Should raise error for missing key
+                with pytest.raises(ValueError) as exc_info:
+                    PaystackClient()
 
-            assert "PAYSTACK_SECRET_KEY" in str(exc_info.value)
+                assert "PAYSTACK_SECRET_KEY" in str(exc_info.value)
 
     def test_client_initialization_empty_key(self):
         """Test client initialization with empty secret key."""

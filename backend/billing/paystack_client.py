@@ -23,7 +23,7 @@ class PaystackClient:
 
         # Check if we're in test mode (default keys)
         self.is_test_mode = (self.secret_key == "sk_test_default_for_ci_cd" or
-                           "test" in self.secret_key.lower())
+                           (self.secret_key and "test" in self.secret_key.lower()))
 
         if not self.secret_key and not self.is_test_mode:
             raise ValueError("PAYSTACK_SECRET_KEY environment variable is required")
