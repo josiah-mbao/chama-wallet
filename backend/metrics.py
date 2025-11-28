@@ -184,11 +184,23 @@ def record_rate_limit_violation(violator_type: str = 'unknown'):
 
 def get_metrics_summary() -> Dict[str, Any]:
     """Get a summary of current metrics for monitoring"""
+    # Get basic registry info without the complex objects
+    collectors = []
+    for collector in TENANT_REGISTRY._collector_to_names.keys():
+        collectors.append({
+            "name": collector._name if hasattr(collector, '_name') else str(type(collector).__name__),
+            "type": type(collector).__name__
+        })
+
     return {
-        "tenant_registry": TENANT_REGISTRY,
-        "active_sessions": {
-            f"chama_{tenant_id}": ACTIVE_SESSIONS.labels(tenant=f"chama_{tenant_id}")._value
-            for tenant_id in range(1, 100)  # Check first 100 tenants (could be improved)
+        "registry_info": {
+            "collectors_count": len(collectors),
+            "collectors": collectors
+        },
+        "summary": {
+            "description": "Tenant-aware metrics for multi-tenant chama wallet",
+            "total_tenants_tracked": len([c for c in collectors if 'chama_' in str(c)]),
+            "metrics_types": ["requests", "latency", "database_queries", "cache_operations", "active_sessions", "rate_limit_violations"]
         }
     }
 
