@@ -241,26 +241,25 @@ class TestPaystackClientEdgeCases:
 
     @pytest.mark.asyncio
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
-    async def test_create_plan_invalid_amount(self, paystack_client):
+    async def test_create_plan_invalid_amount(self, mock_request, paystack_client):
         """Test creating plan with invalid amount."""
         # Paystack requires amounts in kobo, test boundary cases
         # This would normally be validated client-side, but test edge case
 
-        with patch.object(paystack_client, '_make_request') as mock_request:
-            mock_request.return_value = {
-                "status": True,
-                "data": {"id": "plan_123", "name": "Test Plan"}
-            }
+        mock_request.return_value = {
+            "status": True,
+            "data": {"id": "plan_123", "name": "Test Plan"}
+        }
 
-            result = await paystack_client.create_plan(
-                name="Edge Case Plan",
-                amount=0,  # Zero amount edge case
-                interval="monthly",
-                currency="KES"
-            )
+        result = await paystack_client.create_plan(
+            name="Edge Case Plan",
+            amount=0,  # Zero amount edge case
+            interval="monthly",
+            currency="KES"
+        )
 
-            # Should still work, Paystack might handle zero amounts
-            assert result["id"] == "plan_123"
+        # Should still work, Paystack might handle zero amounts
+        assert result["id"] == "plan_123"
 
     @pytest.mark.asyncio
     async def test_process_webhook_event_error_handling(self, paystack_client):
