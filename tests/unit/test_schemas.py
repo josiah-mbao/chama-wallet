@@ -3,8 +3,15 @@ from pydantic import ValidationError
 from backend.schemas import UserCreate, ChamaCreate, ContributionCreate
 
 def test_user_create_valid():
-    user = UserCreate(email="a@b.com", password="1234")
+    user = UserCreate(
+        email="a@b.com",
+        first_name="Test",
+        last_name="User",
+        password="1234"
+    )
     assert user.email == "a@b.com"
+    assert user.first_name == "Test"
+    assert user.last_name == "User"
 
 def test_user_create_invalid_email():
     with pytest.raises(ValidationError):

@@ -16,8 +16,15 @@ def db_session():
     Base.metadata.drop_all(engine)
 
 def test_create_user(db_session):
-    user_in = UserCreate(email="test@example.com", password="password123")
+    user_in = UserCreate(
+        email="test@example.com",
+        first_name="Test",
+        last_name="User",
+        password="password123"
+    )
     user = create_user(db_session, user_in)
     assert user.email == "test@example.com"
+    assert user.first_name == "Test"
+    assert user.last_name == "User"
     fetched = get_user_by_email(db_session, "test@example.com")
     assert fetched.id == user.id
