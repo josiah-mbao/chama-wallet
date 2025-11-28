@@ -1,15 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.417" timestamp="2025-11-18T15:39:10.663368+03:00" hostname="Josiahs-MacBook-Air.local"><testcase classname="tests.unit.test_exception_handlers" name="test_chama_wallet_exception_handler" time="0.023"><failure message="AttributeError: 'JSONResponse' object has no attribute 'detail'">def test_chama_wallet_exception_handler():
-        """Test ChamaWalletException handler"""
-        try:
-            from backend.exceptions import AuthenticationError
-    
-            mock_request = MagicMock(spec=Request)
-            exc = AuthenticationError("Invalid credentials")
-    
-            result = asyncio.run(chama_wallet_exception_handler(mock_request, exc))
-    
-            assert result.status_code == 401
-&gt;           assert "Invalid credentials" in result.detail
-E           AttributeError: 'JSONResponse' object has no attribute 'detail'
-
-tests/unit/test_exception_handlers.py:22: AttributeError</failure></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="2" time="0.683" timestamp="2025-11-28T13:30:42.868243+03:00" hostname="Josiahs-MacBook-Air.local"><testcase classname="tests.integration.test_billing.TestBillingEdgeCases" name="test_create_subscription_invalid_plan" time="0.163" /><testcase classname="tests.integration.test_billing.TestBillingEdgeCases" name="test_update_subscription_no_subscription" time="0.129" /></testsuite></testsuites>
