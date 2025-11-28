@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# --- 0. Use in-memory SQLite DB for tests (better isolation) ---
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+# --- 0. Use file-based SQLite DB for tests (better CI compatibility) ---
+os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["SECRET_KEY"] = "test_secret_key_for_testing"
 # Disable Redis for tests (will use fake connection that fails gracefully)
 os.environ["REDIS_URL"] = "redis://localhost:9999/0"  # Non-existent Redis URL
@@ -39,13 +39,16 @@ class NoOpRateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         return response
 
-# --- 2. Create tables for each test (better isolation) ---
-@pytest.fixture(scope="function", autouse=True)
+# --- 2. Create tables once per test session (better for CI) ---
+@pytest.fixture(scope="session", autouse=True)
 def setup_database():
-    """Create all tables before each test and drop them after."""
+    """Create all tables before tests and drop them after session ends."""
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+    # Clean up test database file
+    if os.path.exists("./test.db"):
+        os.remove("./test.db")
 
 # --- 3. Provide a fresh DB session per test with rollback ---
 @pytest.fixture(scope="function")
