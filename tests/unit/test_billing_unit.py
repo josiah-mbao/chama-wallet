@@ -219,10 +219,8 @@ class TestPaystackClientEdgeCases:
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_create_customer_api_error(self, mock_request, paystack_client):
         """Test handling Paystack API errors during customer creation."""
-        mock_request.return_value = {
-            "status": False,
-            "message": "Invalid email format"
-        }
+        # Mock _make_request to raise ValueError as it does in real error scenarios
+        mock_request.side_effect = ValueError("Paystack API error: Invalid email format")
 
         with pytest.raises(ValueError) as exc_info:
             await paystack_client.create_customer(email="invalid-email")
@@ -233,10 +231,8 @@ class TestPaystackClientEdgeCases:
     @patch('backend.billing.paystack_client.PaystackClient._make_request')
     async def test_verify_transaction_not_found(self, mock_request, paystack_client):
         """Test verifying non-existent transaction."""
-        mock_request.return_value = {
-            "status": False,
-            "message": "Transaction not found"
-        }
+        # Mock _make_request to raise ValueError as it does in real error scenarios
+        mock_request.side_effect = ValueError("Paystack API error: Transaction not found")
 
         with pytest.raises(ValueError) as exc_info:
             await paystack_client.verify_transaction("invalid_ref")
