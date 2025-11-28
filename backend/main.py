@@ -18,6 +18,7 @@ from backend.middleware import (
 from backend.rate_limiting import RateLimitMiddleware
 from backend.metrics import get_prometheus_metrics, get_metrics_summary
 from starlette_exporter import PrometheusMiddleware, handle_metrics
+from fastapi.middleware.cors import CORSMiddleware
 
 # Set default SECRET_KEY for local development if not set
 if not os.getenv("SECRET_KEY"):
@@ -31,6 +32,16 @@ logger = setup_logging(
 
 app = FastAPI(
     title="Chama Wallet API",
+)
+
+# CORS configuration for frontend integration
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in cors_origins],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Add middleware (order matters - prometheus first, then rate limiting, then request logging, then tenant context)
