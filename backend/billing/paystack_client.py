@@ -473,22 +473,37 @@ class PaystackClient:
     # Webhook event handlers (to be implemented)
     async def _handle_invoice_created(self, data: Dict[str, Any]):
         """Handle invoice creation webhook."""
+        if data is None:
+            logger.warning("Invoice created webhook received with no data")
+            return
         logger.info(f"Invoice created: {data.get('id')}")
 
     async def _handle_invoice_updated(self, data: Dict[str, Any]):
         """Handle invoice update webhook."""
+        if data is None:
+            logger.warning("Invoice updated webhook received with no data")
+            return
         logger.info(f"Invoice updated: {data.get('id')} - {data.get('status')}")
 
     async def _handle_charge_success(self, data: Dict[str, Any]):
         """Handle successful charge webhook."""
+        if data is None:
+            logger.warning("Charge success webhook received with no data")
+            return
         logger.info(f"Charge successful: {data.get('reference')} - {data.get('amount')}")
 
     async def _handle_subscription_created(self, data: Dict[str, Any]):
         """Handle subscription creation webhook."""
+        if data is None:
+            logger.warning("Subscription created webhook received with no data")
+            return
         logger.info(f"Subscription created: {data.get('id')}")
 
     async def _handle_subscription_cancelled(self, data: Dict[str, Any]):
         """Handle subscription cancellation webhook."""
+        if data is None:
+            logger.warning("Subscription cancelled webhook received with no data")
+            return
         logger.info(f"Subscription cancelled: {data.get('id')}")
 
 
