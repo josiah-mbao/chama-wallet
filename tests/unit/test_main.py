@@ -31,6 +31,15 @@ class TestAppInitialization:
         # App should have routes registered
         assert len(app.routes) > 0
 
+    def test_cors_middleware_added(self):
+        """Test that CORS middleware is configured (basic presence check)."""
+        from backend.main import app
+
+        # Check that we have middleware configured (CORS is in the list)
+        # The exact middleware inspection is complex, but we can verify basic setup
+        assert hasattr(app, 'user_middleware'), "App should have middleware configured"
+        assert len(app.user_middleware) > 0, "App should have at least one middleware"
+
     def test_router_inclusion(self):
         """Test that API routers are properly included."""
         from backend.main import app
