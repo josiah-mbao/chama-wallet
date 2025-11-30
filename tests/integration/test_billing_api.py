@@ -497,10 +497,12 @@ class TestWebhooks:
         """Test webhook processing with invalid data."""
         response = client.post("/billing/webhooks", json={})
 
-        # Should still return 200 but with error status
+        # Webhooks should always return 200 to acknowledge receipt
+        # Even for invalid data, we return success to avoid retries
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "error"
+        assert data["status"] == "success"  # Webhooks always return success
+        assert data["event"] is None  # Invalid data has no event type
 
 
 class TestSubscriptionUpdates:
