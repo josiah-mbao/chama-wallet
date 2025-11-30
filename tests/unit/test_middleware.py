@@ -59,7 +59,7 @@ class TestTenantContextMiddleware:
             mock_response = Response(status_code=200)
 
             # Call dispatch
-            result = await middleware.dispatch(mock_request, lambda: mock_response)
+            result = await middleware.dispatch(mock_request, lambda r: mock_response)
 
             # Verify tenant was extracted and set
             mock_tenant.set.assert_called_once_with(456)
@@ -79,7 +79,7 @@ class TestTenantContextMiddleware:
             mock_tenant.set.return_value = "token_456"
             mock_response = Response(status_code=200)
 
-            result = await middleware.dispatch(mock_request, lambda: mock_response)
+            result = await middleware.dispatch(mock_request, lambda r: mock_response)
 
             mock_tenant.set.assert_called_once_with(789)
             mock_start.assert_called_once_with(789)
@@ -97,7 +97,7 @@ class TestTenantContextMiddleware:
 
             mock_response = Response(status_code=200)
 
-            result = await middleware.dispatch(mock_request, lambda: mock_response)
+            result = await middleware.dispatch(mock_request, lambda r: mock_response)
 
             # Verify tenant context was NOT set
             mock_tenant.set.assert_not_called()
@@ -105,7 +105,8 @@ class TestTenantContextMiddleware:
             mock_end.assert_called_once_with("GET", "/users/token", 200)
             mock_tenant.reset.assert_not_called()
 
-    def test_invalid_tenant_id_format(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_invalid_tenant_id_format(self, middleware, mock_request):
         """Test handling of invalid tenant ID formats"""
         mock_request.url = URL("http://testserver/chamas/abc/contributions")  # Invalid ID
 
@@ -113,16 +114,17 @@ class TestTenantContextMiddleware:
              patch('backend.metrics.start_request_metrics') as mock_start, \
              patch('backend.metrics.end_request_metrics') as mock_end:
 
-            mock_app = MagicMock(return_value=Response(status_code=200))
+            mock_response = Response(status_code=200)
 
-            result = middleware.dispatch(mock_request, lambda: mock_app())
+            result = await middleware.dispatch(mock_request, lambda r: mock_response)
 
             # Should not set tenant context for invalid ID
             mock_tenant.set.assert_not_called()
             mock_start.assert_called_once_with()
             mock_end.assert_called_once_with("GET", "/chamas/abc/contributions", 200)
 
-    def test_exception_handling_with_context_cleanup(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_exception_handling_with_context_cleanup(self, middleware, mock_request):
         """Test proper context cleanup when exceptions occur"""
         mock_request.url = URL("http://testserver/chamas/123/members")
 
@@ -131,17 +133,19 @@ class TestTenantContextMiddleware:
              patch('backend.metrics.end_request_metrics') as mock_end:
 
             mock_tenant.set.return_value = "token_789"
-            mock_app = MagicMock(side_effect=Exception("Test error"))
+            async def failing_app(r):
+                raise Exception("Test error")
 
             with pytest.raises(Exception, match="Test error"):
-                middleware.dispatch(mock_request, lambda: mock_app())
+                await middleware.dispatch(mock_request, failing_app)
 
             # Verify context cleanup happened even with exception
             mock_tenant.set.assert_called_once_with(123)
             mock_tenant.reset.assert_called_once_with("token_789")
             mock_end.assert_called_once_with("GET", "/chamas/123/members", 500)
 
-    def test_exception_handling_without_tenant_context(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_exception_handling_without_tenant_context(self, middleware, mock_request):
         """Test exception handling for non-tenant routes"""
         mock_request.url = URL("http://testserver/users/login")
 
@@ -149,10 +153,11 @@ class TestTenantContextMiddleware:
              patch('backend.metrics.start_request_metrics') as mock_start, \
              patch('backend.metrics.end_request_metrics') as mock_end:
 
-            mock_app = MagicMock(side_effect=Exception("Test error"))
+            async def failing_app(r):
+                raise Exception("Test error")
 
             with pytest.raises(Exception, match="Test error"):
-                middleware.dispatch(mock_request, lambda: mock_app())
+                await middleware.dispatch(mock_request, failing_app)
 
             mock_tenant.set.assert_not_called()
             mock_tenant.reset.assert_not_called()
