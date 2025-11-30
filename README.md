@@ -1,7 +1,7 @@
 # 🚀 **Chama Wallet API - Enterprise SaaS Platform**
 
 [![CI/CD Pipeline](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml/badge.svg)](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml)
-[![Coverage Status](https://img.shields.io/badge/Coverage-67%25-green)](https://github.com/)
+[![Coverage Status](https://img.shields.io/badge/Coverage-72%25-green)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
@@ -46,7 +46,7 @@ Built to scale from MVP to enterprise with complete data isolation, automated bi
 * **📊 Usage Analytics:** Plan enforcement and billing cycle management
 
 ### **Production-Ready Features**
-* **🧪 Comprehensive Testing:** 144 tests with CI/CD pipeline and 67% coverage
+* **🧪 Comprehensive Testing:** 179 tests with CI/CD pipeline and 72% coverage
 * **🐳 Complete Dockerization:** Multi-service container orchestration
 * **📊 Monitoring & Logging:** Structured logging with correlation IDs
 * **🛡️ Security:** Rate limiting, input validation, and secure authentication
@@ -347,7 +347,7 @@ docker-compose logs celery_worker
 - **WebSocket Broadcasting:** Sub-millisecond event delivery
 - **Background Processing:** Automatic analytics recomputation
 - **Concurrent Users:** Scales to 1000s of Chama members
-- **CI/CD Tests:** **144 tests passing** with 67% coverage
+- **CI/CD Tests:** **179 tests passing** with 72% coverage
 
 ---
 
@@ -358,8 +358,8 @@ docker-compose logs celery_worker
 ### **Automated Test Suite**
 Our comprehensive testing infrastructure ensures production reliability:
 
-- **🧪 144+ Automated Tests:** Covering API endpoints, business logic, middleware, and data integrity
-- **📊 67% Code Coverage:** Measuring test effectiveness across backend modules
+- **🧪 179+ Automated Tests:** Covering API endpoints, business logic, middleware, and data integrity
+- **📊 72% Code Coverage:** Measuring test effectiveness across backend modules
 - **⚡ CI/CD Pipeline:** GitHub Actions with automated test execution on every commit
 - **🔄 Multi-Environment Testing:** Compatible with SQLite (local) and PostgreSQL (production)
 
