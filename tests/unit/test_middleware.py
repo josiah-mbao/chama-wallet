@@ -59,7 +59,10 @@ class TestTenantContextMiddleware:
             mock_response = Response(status_code=200)
 
             # Call dispatch
-            result = await middleware.dispatch(mock_request, lambda r: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             # Verify tenant was extracted and set
             mock_tenant.set.assert_called_once_with(456)
@@ -79,7 +82,10 @@ class TestTenantContextMiddleware:
             mock_tenant.set.return_value = "token_456"
             mock_response = Response(status_code=200)
 
-            result = await middleware.dispatch(mock_request, lambda r: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             mock_tenant.set.assert_called_once_with(789)
             mock_start.assert_called_once_with(789)
@@ -97,7 +103,10 @@ class TestTenantContextMiddleware:
 
             mock_response = Response(status_code=200)
 
-            result = await middleware.dispatch(mock_request, lambda r: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             # Verify tenant context was NOT set
             mock_tenant.set.assert_not_called()
@@ -116,7 +125,10 @@ class TestTenantContextMiddleware:
 
             mock_response = Response(status_code=200)
 
-            result = await middleware.dispatch(mock_request, lambda r: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             # Should not set tenant context for invalid ID
             mock_tenant.set.assert_not_called()
