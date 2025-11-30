@@ -366,7 +366,7 @@ class TestPerformanceMonitoringMiddleware:
         mock_url.path = "/chamas/123/analytics"
         mock_request.url = mock_url
 
-        with patch('time.time', side_effect=[1000.0, 1002.5]):  # 2.5s duration
+        with patch('time.time', side_effect=[1000.0, 1002.5, 1002.6]):  # 2.5s duration + logging timestamp
 
             mock_response = Response(status_code=200)
 
@@ -388,7 +388,7 @@ class TestPerformanceMonitoringMiddleware:
         mock_url.path = "/chamas/123/summary"
         mock_request.url = mock_url
 
-        with patch('time.time', side_effect=[1000.0, 1000.5]):  # 0.5s duration (under 1.0 threshold)
+        with patch('time.time', side_effect=[1000.0, 1000.5, 1000.6]):  # 0.5s duration (under 1.0 threshold) + logging
 
             mock_response = Response(status_code=200)
 
@@ -410,7 +410,7 @@ class TestPerformanceMonitoringMiddleware:
         mock_url.path = "/api/v1/chamas/456/members"
         mock_request.url = mock_url
 
-        with patch('time.time', side_effect=[1000.0, 1000.8]):  # 0.8s duration (over 0.5 threshold)
+        with patch('time.time', side_effect=[1000.0, 1000.8, 1000.9]):  # 0.8s duration (over 0.5 threshold) + logging
 
             mock_response = Response(status_code=200)
 
