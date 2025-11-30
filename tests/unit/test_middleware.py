@@ -199,17 +199,22 @@ class TestRequestLoggingMiddleware:
         from backend.middleware import RequestLoggingMiddleware
         return RequestLoggingMiddleware(mock_app)
 
-    def test_request_logging_normal_flow(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_request_logging_normal_flow(self, middleware, mock_request, caplog):
         """Test normal request/response logging"""
-        mock_request.url = URL("http://testserver/chamas/123/summary")
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/123/summary"
+        mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-123'), \
              patch('time.time', side_effect=[1000.0, 1000.5]):  # 0.5s duration
 
             mock_response = Response(status_code=200)
-            mock_app.return_value = mock_response
 
-            result = middleware.dispatch(mock_request, lambda: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             # Check request log
             request_log = [r for r in caplog.records if "Request:" in r.message]
@@ -225,28 +230,39 @@ class TestRequestLoggingMiddleware:
             assert "Status: 200" in response_log[0].message
             assert "Duration: 0.5000s" in response_log[0].message
 
-    def test_excluded_paths_not_logged(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_excluded_paths_not_logged(self, middleware, mock_request, caplog):
         """Test that excluded paths are not logged"""
-        mock_request.url = URL("http://testserver/docs")
+        mock_url = MagicMock()
+        mock_url.path = "/docs"
+        mock_request.url = mock_url
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         # Should not log anything for excluded paths
         logs = [r for r in caplog.records if r.name == "chama_wallet.requests"]
         assert len(logs) == 0
 
-    def test_error_logging_on_exception(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_error_logging_on_exception(self, middleware, mock_request, caplog):
         """Test error logging when request processing fails"""
-        mock_request.url = URL("http://testserver/chamas/123/contributions")
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/123/contributions"
+        mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-456'), \
              patch('time.time', side_effect=[1000.0, 1000.3]):
 
+            async def failing_app(r):
+                raise ValueError("Processing error")
+
             with pytest.raises(ValueError, match="Processing error"):
-                middleware.dispatch(mock_request, lambda: (_ for _ in ()).throw(ValueError("Processing error")))
+                await middleware.dispatch(mock_request, failing_app)
 
             # Check error log
             error_logs = [r for r in caplog.records if "Request failed:" in r.message]
@@ -256,17 +272,22 @@ class TestRequestLoggingMiddleware:
             assert "Duration: 0.3000s" in error_logs[0].message
             assert error_logs[0].extra['correlation_id'] == 'corr-456'
 
-    def test_warning_log_for_error_responses(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_warning_log_for_error_responses(self, middleware, mock_request, caplog):
         """Test warning level logging for 4xx/5xx responses"""
-        mock_request.url = URL("http://testserver/chamas/999/summary")
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/999/summary"
+        mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-789'), \
              patch('time.time', side_effect=[1000.0, 1000.2]):
 
             mock_response = Response(status_code=404)
-            mock_app.return_value = mock_response
 
-            result = middleware.dispatch(mock_request, lambda: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             response_logs = [r for r in caplog.records if "Response:" in r.message]
             assert len(response_logs) == 1
@@ -281,43 +302,52 @@ class TestSecurityLoggingMiddleware:
         from backend.middleware import SecurityLoggingMiddleware
         return SecurityLoggingMiddleware(mock_app)
 
-    def test_suspicious_user_agent_detection(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_suspicious_user_agent_detection(self, middleware, mock_request, caplog):
         """Test detection of suspicious user agents"""
         mock_request.headers = {"user-agent": "sqlmap/1.0"}
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         security_logs = [r for r in caplog.records if "Security event detected" in r.message]
         assert len(security_logs) == 1
         assert "suspicious_user_agent" in security_logs[0].message
         assert "sqlmap" in security_logs[0].message
 
-    def test_multiple_suspicious_indicators(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_multiple_suspicious_indicators(self, middleware, mock_request, caplog):
         """Test detection of multiple suspicious indicators"""
         # This would require multiple indicators, but currently only user-agent is checked
         # In a real implementation, this would test rate limiting, etc.
         mock_request.headers = {"user-agent": "nikto/2.0"}
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         security_logs = [r for r in caplog.records if "Security event detected" in r.message]
         assert len(security_logs) == 1
         assert "suspicious_user_agent" in security_logs[0].message
 
-    def test_normal_request_no_security_alert(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_normal_request_no_security_alert(self, middleware, mock_request, caplog):
         """Test that normal requests don't trigger security alerts"""
         mock_request.headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         security_logs = [r for r in caplog.records if "Security event detected" in r.message]
         assert len(security_logs) == 0
@@ -331,16 +361,21 @@ class TestPerformanceMonitoringMiddleware:
         from backend.middleware import PerformanceMonitoringMiddleware
         return PerformanceMonitoringMiddleware(mock_app, slow_request_threshold=1.0)
 
-    def test_slow_request_detection(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_slow_request_detection(self, middleware, mock_request, caplog):
         """Test detection and logging of slow requests"""
-        mock_request.url = URL("http://testserver/chamas/123/analytics")
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/123/analytics"
+        mock_request.url = mock_url
 
         with patch('time.time', side_effect=[1000.0, 1002.5]):  # 2.5s duration (over threshold)
 
             mock_response = Response(status_code=200)
-            mock_app.return_value = mock_response
 
-            result = middleware.dispatch(mock_request, lambda: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             slow_logs = [r for r in caplog.records if "Slow request:" in r.message]
             assert len(slow_logs) == 1
@@ -348,33 +383,43 @@ class TestPerformanceMonitoringMiddleware:
             assert "Duration: 2.5000s" in slow_logs[0].message
             assert "Status: 200" in slow_logs[0].message
 
-    def test_fast_request_no_alert(self, middleware, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_fast_request_no_alert(self, middleware, mock_request, caplog):
         """Test that fast requests don't trigger alerts"""
-        mock_request.url = URL("http://testserver/chamas/123/summary")
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/123/summary"
+        mock_request.url = mock_url
 
         with patch('time.time', side_effect=[1000.0, 1000.5]):  # 0.5s duration (under threshold)
 
             mock_response = Response(status_code=200)
-            mock_app.return_value = mock_response
 
-            result = middleware.dispatch(mock_request, lambda: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             slow_logs = [r for r in caplog.records if "Slow request:" in r.message]
             assert len(slow_logs) == 0
 
-    def test_custom_threshold(self, mock_app, mock_request, caplog):
+    @pytest.mark.asyncio
+    async def test_custom_threshold(self, mock_app, mock_request, caplog):
         """Test configurable slow request threshold"""
         from backend.middleware import PerformanceMonitoringMiddleware
         middleware = PerformanceMonitoringMiddleware(mock_app, slow_request_threshold=0.5)
 
-        mock_request.url = URL("http://testserver/api/v1/chamas/456/members")
+        mock_url = MagicMock()
+        mock_url.path = "/api/v1/chamas/456/members"
+        mock_request.url = mock_url
 
         with patch('time.time', side_effect=[1000.0, 1000.8]):  # 0.8s duration (over custom threshold)
 
             mock_response = Response(status_code=200)
-            mock_app.return_value = mock_response
 
-            result = middleware.dispatch(mock_request, lambda: mock_response)
+            async def mock_call_next(r):
+                return mock_response
+
+            result = await middleware.dispatch(mock_request, mock_call_next)
 
             slow_logs = [r for r in caplog.records if "Slow request:" in r.message]
             assert len(slow_logs) == 1
@@ -389,54 +434,74 @@ class TestAPIVersioningMiddleware:
         from backend.middleware import APIVersioningMiddleware
         return APIVersioningMiddleware(mock_app)
 
-    def test_version_headers_for_v1_route(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_version_headers_for_v1_route(self, middleware, mock_request):
         """Test API versioning headers for v1 routes"""
-        mock_request.url = URL("http://testserver/api/v1/chamas/123")
+        mock_url = MagicMock()
+        mock_url.path = "/api/v1/chamas/123"
+        mock_request.url = mock_url
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         assert result.headers["API-Version"] == "v1"
         assert "v1" in result.headers["API-Supported-Versions"]
         assert "v2" in result.headers["API-Supported-Versions"]
         assert result.headers["API-Deprecated-Versions"] == ""
 
-    def test_version_headers_for_v2_route(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_version_headers_for_v2_route(self, middleware, mock_request):
         """Test API versioning headers for v2 routes"""
-        mock_request.url = URL("http://testserver/api/v2/users/profile")
+        mock_url = MagicMock()
+        mock_url.path = "/api/v2/users/profile"
+        mock_request.url = mock_url
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         assert result.headers["API-Version"] == "v2"
         assert "v1" in result.headers["API-Supported-Versions"]
         assert "v2" in result.headers["API-Supported-Versions"]
 
-    def test_default_headers_for_non_versioned_routes(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_default_headers_for_non_versioned_routes(self, middleware, mock_request):
         """Test default headers for routes without version prefix"""
-        mock_request.url = URL("http://testserver/health")
+        mock_url = MagicMock()
+        mock_url.path = "/health"
+        mock_request.url = mock_url
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         assert result.headers["API-Version"] == "v1"  # Default version
         assert "v1" in result.headers["API-Supported-Versions"]
         assert "v2" in result.headers["API-Supported-Versions"]
 
-    def test_invalid_version_handling(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_invalid_version_handling(self, middleware, mock_request):
         """Test handling of invalid API version formats"""
-        mock_request.url = URL("http://testserver/api/v3/endpoint")  # Invalid version
+        mock_url = MagicMock()
+        mock_url.path = "/api/v3/endpoint"  # Invalid version
+        mock_request.url = mock_url
 
         mock_response = Response(status_code=200)
-        mock_app.return_value = mock_response
 
-        result = middleware.dispatch(mock_request, lambda: mock_response)
+        async def mock_call_next(r):
+            return mock_response
+
+        result = await middleware.dispatch(mock_request, mock_call_next)
 
         # Should fall back to default headers
         assert result.headers["API-Version"] == "v1"
