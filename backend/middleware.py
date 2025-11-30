@@ -195,13 +195,15 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
             # Set tenant context and start metrics tracking for this request
             token = current_tenant.set(tenant_id)
             start_request_metrics(tenant_id)
+            success = False
             try:
                 response = await call_next(request)
-                # End metrics tracking with request details
-                end_request_metrics(request.method, path, response.status_code)
+                success = response.status_code < 400
                 return response
             finally:
-                # Clean up context
+                # End metrics tracking and clean up context
+                status_code = 200 if success else 500
+                end_request_metrics(request.method, path, status_code)
                 current_tenant.reset(token)
         else:
             # No tenant context needed (e.g., user registration, login)
