@@ -22,9 +22,10 @@ def mock_request():
     """Mock FastAPI request object"""
     request = MagicMock(spec=Request)
     request.method = "GET"
-    request.url = URL("http://testserver/chamas/123/members")
-    # Ensure url.path returns the correct path
-    request.url.path = "/chamas/123/members"
+    # Create a proper mock URL with path attribute
+    mock_url = MagicMock()
+    mock_url.path = "/chamas/123/members"
+    request.url = mock_url
     request.client = MagicMock()
     request.client.host = "127.0.0.1"
     request.headers = {"user-agent": "test-agent"}
@@ -51,8 +52,9 @@ class TestTenantContextMiddleware:
     @pytest.mark.asyncio
     async def test_tenant_extraction_from_chama_route(self, middleware, mock_request):
         """Test tenant ID extraction from /chamas/{id}/ routes"""
-        mock_request.url = URL("http://testserver/chamas/456/contributions")
-        mock_request.url.path = "/chamas/456/contributions"
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/456/contributions"
+        mock_request.url = mock_url
 
         with patch('backend.database.current_tenant') as mock_tenant, \
              patch('backend.metrics.start_request_metrics') as mock_start, \
@@ -76,8 +78,9 @@ class TestTenantContextMiddleware:
     @pytest.mark.asyncio
     async def test_tenant_extraction_from_versioned_chama_route(self, middleware, mock_request):
         """Test tenant ID extraction from /api/v1/chamas/{id}/ routes"""
-        mock_request.url = URL("http://testserver/api/v1/chamas/789/members")
-        mock_request.url.path = "/api/v1/chamas/789/members"
+        mock_url = MagicMock()
+        mock_url.path = "/api/v1/chamas/789/members"
+        mock_request.url = mock_url
 
         with patch('backend.database.current_tenant') as mock_tenant, \
              patch('backend.metrics.start_request_metrics') as mock_start, \
@@ -99,8 +102,9 @@ class TestTenantContextMiddleware:
     @pytest.mark.asyncio
     async def test_no_tenant_context_for_non_chama_routes(self, middleware, mock_request):
         """Test no tenant context for routes not involving chamas"""
-        mock_request.url = URL("http://testserver/users/token")
-        mock_request.url.path = "/users/token"
+        mock_url = MagicMock()
+        mock_url.path = "/users/token"
+        mock_request.url = mock_url
 
         with patch('backend.database.current_tenant') as mock_tenant, \
              patch('backend.metrics.start_request_metrics') as mock_start, \
@@ -122,8 +126,9 @@ class TestTenantContextMiddleware:
     @pytest.mark.asyncio
     async def test_invalid_tenant_id_format(self, middleware, mock_request):
         """Test handling of invalid tenant ID formats"""
-        mock_request.url = URL("http://testserver/chamas/abc/contributions")  # Invalid ID
-        mock_request.url.path = "/chamas/abc/contributions"
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/abc/contributions"  # Invalid ID
+        mock_request.url = mock_url
 
         with patch('backend.database.current_tenant') as mock_tenant, \
              patch('backend.metrics.start_request_metrics') as mock_start, \
@@ -144,7 +149,9 @@ class TestTenantContextMiddleware:
     @pytest.mark.asyncio
     async def test_exception_handling_with_context_cleanup(self, middleware, mock_request):
         """Test proper context cleanup when exceptions occur"""
-        mock_request.url = URL("http://testserver/chamas/123/members")
+        mock_url = MagicMock()
+        mock_url.path = "/chamas/123/members"
+        mock_request.url = mock_url
 
         with patch('backend.database.current_tenant') as mock_tenant, \
              patch('backend.metrics.start_request_metrics') as mock_start, \
@@ -165,8 +172,9 @@ class TestTenantContextMiddleware:
     @pytest.mark.asyncio
     async def test_exception_handling_without_tenant_context(self, middleware, mock_request):
         """Test exception handling for non-tenant routes"""
-        mock_request.url = URL("http://testserver/users/login")
-        mock_request.url.path = "/users/login"
+        mock_url = MagicMock()
+        mock_url.path = "/users/login"
+        mock_request.url = mock_url
 
         with patch('backend.database.current_tenant') as mock_tenant, \
              patch('backend.metrics.start_request_metrics') as mock_start, \
