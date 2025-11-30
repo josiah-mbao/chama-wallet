@@ -124,8 +124,8 @@ class TestSubscriptionPlans:
         assert "id" in plan
         assert "name" in plan
         assert "description" in plan
-        assert "amount" in plan
-        assert "billing_cycle" in plan
+        assert "price_monthly" in plan
+        assert "price_yearly" in plan
         assert "max_members" in plan
         assert "max_contributions" in plan
         assert "max_storage_gb" in plan
@@ -140,7 +140,7 @@ class TestSubscriptionPlans:
         plan = response.json()
         assert plan["id"] == plan_id
         assert plan["name"] == "Basic Plan"
-        assert plan["amount"] == 5000
+        assert plan["price_monthly"] == 50.0
 
     def test_get_subscription_plan_not_found(self, client, init_billing_data):
         """Test getting a non-existent subscription plan."""
