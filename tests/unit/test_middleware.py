@@ -289,10 +289,8 @@ class TestRequestLoggingMiddleware:
 
             response_logs = [r for r in caplog.records if "Response:" in r.message]
             assert len(response_logs) == 1
-            # Remove ANSI color codes before comparison
-            import re
-            levelname_clean = re.sub(r"\x1b\\[.*?m", "", response_logs[0].levelname)
-            assert levelname_clean == "WARNING"
+            # Check that WARNING level is present (handles ANSI color codes)
+            assert "WARNING" in response_logs[0].levelname
 
 
 class TestSecurityLoggingMiddleware:
