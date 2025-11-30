@@ -56,9 +56,9 @@ class TestTenantContextMiddleware:
         mock_url.path = "/chamas/456/contributions"
         mock_request.url = mock_url
 
-        with patch('backend.database.current_tenant') as mock_tenant, \
-             patch('backend.metrics.start_request_metrics') as mock_start, \
-             patch('backend.metrics.end_request_metrics') as mock_end:
+        with patch('backend.middleware.current_tenant') as mock_tenant, \
+             patch('backend.middleware.start_request_metrics') as mock_start, \
+             patch('backend.middleware.end_request_metrics') as mock_end:
 
             mock_tenant.set.return_value = "token_123"
             mock_response = Response(status_code=200)
@@ -82,9 +82,9 @@ class TestTenantContextMiddleware:
         mock_url.path = "/api/v1/chamas/789/members"
         mock_request.url = mock_url
 
-        with patch('backend.database.current_tenant') as mock_tenant, \
-             patch('backend.metrics.start_request_metrics') as mock_start, \
-             patch('backend.metrics.end_request_metrics') as mock_end:
+        with patch('backend.middleware.current_tenant') as mock_tenant, \
+             patch('backend.middleware.start_request_metrics') as mock_start, \
+             patch('backend.middleware.end_request_metrics') as mock_end:
 
             mock_tenant.set.return_value = "token_456"
             mock_response = Response(status_code=200)
@@ -106,9 +106,9 @@ class TestTenantContextMiddleware:
         mock_url.path = "/users/token"
         mock_request.url = mock_url
 
-        with patch('backend.database.current_tenant') as mock_tenant, \
-             patch('backend.metrics.start_request_metrics') as mock_start, \
-             patch('backend.metrics.end_request_metrics') as mock_end:
+        with patch('backend.middleware.current_tenant') as mock_tenant, \
+             patch('backend.middleware.start_request_metrics') as mock_start, \
+             patch('backend.middleware.end_request_metrics') as mock_end:
 
             mock_response = Response(status_code=200)
 
@@ -130,9 +130,9 @@ class TestTenantContextMiddleware:
         mock_url.path = "/chamas/abc/contributions"  # Invalid ID
         mock_request.url = mock_url
 
-        with patch('backend.database.current_tenant') as mock_tenant, \
-             patch('backend.metrics.start_request_metrics') as mock_start, \
-             patch('backend.metrics.end_request_metrics') as mock_end:
+        with patch('backend.middleware.current_tenant') as mock_tenant, \
+             patch('backend.middleware.start_request_metrics') as mock_start, \
+             patch('backend.middleware.end_request_metrics') as mock_end:
 
             mock_response = Response(status_code=200)
 
@@ -153,9 +153,9 @@ class TestTenantContextMiddleware:
         mock_url.path = "/chamas/123/members"
         mock_request.url = mock_url
 
-        with patch('backend.database.current_tenant') as mock_tenant, \
-             patch('backend.metrics.start_request_metrics') as mock_start, \
-             patch('backend.metrics.end_request_metrics') as mock_end:
+        with patch('backend.middleware.current_tenant') as mock_tenant, \
+             patch('backend.middleware.start_request_metrics') as mock_start, \
+             patch('backend.middleware.end_request_metrics') as mock_end:
 
             mock_tenant.set.return_value = "token_789"
             async def failing_app(r):
@@ -176,9 +176,9 @@ class TestTenantContextMiddleware:
         mock_url.path = "/users/login"
         mock_request.url = mock_url
 
-        with patch('backend.database.current_tenant') as mock_tenant, \
-             patch('backend.metrics.start_request_metrics') as mock_start, \
-             patch('backend.metrics.end_request_metrics') as mock_end:
+        with patch('backend.middleware.current_tenant') as mock_tenant, \
+             patch('backend.middleware.start_request_metrics') as mock_start, \
+             patch('backend.middleware.end_request_metrics') as mock_end:
 
             async def failing_app(r):
                 raise Exception("Test error")
