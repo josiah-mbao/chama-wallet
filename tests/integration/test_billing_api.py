@@ -103,9 +103,9 @@ def init_billing_data(db_session):
 
 def login_get_token(client, email, password):
     """Helper to login and get access token."""
-    # First register the user if not exists
+    # Use versioned API endpoints since CI uses main app, not test app
     register_response = client.post(
-        "/users/",
+        "/api/v1/users/",
         json={
             "email": email,
             "first_name": email.split('@')[0],
@@ -116,7 +116,7 @@ def login_get_token(client, email, password):
     # Registration might fail if user exists, that's ok
 
     # Now try to login
-    response = client.post("/users/token", data={"username": email, "password": password})
+    response = client.post("/api/v1/users/token", data={"username": email, "password": password})
     assert response.status_code == 200, f"Login failed: {response.status_code} - {response.text}"
     return response.json()["access_token"]
 
