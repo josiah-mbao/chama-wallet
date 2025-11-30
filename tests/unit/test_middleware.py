@@ -207,7 +207,7 @@ class TestRequestLoggingMiddleware:
         mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-123'), \
-             patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.5]):  # 0.5s duration
+             patch('time.time', side_effect=[1000.0, 1000.0, 1000.0, 1000.0, 1000.5]):  # 0.5s duration
 
             mock_response = Response(status_code=200)
 
@@ -256,7 +256,7 @@ class TestRequestLoggingMiddleware:
         mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-456'), \
-             patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.3]):
+             patch('time.time', side_effect=[1000.0, 1000.0, 1000.0, 1000.0, 1000.3]):
 
             async def failing_app(r):
                 raise ValueError("Processing error")
@@ -280,7 +280,7 @@ class TestRequestLoggingMiddleware:
         mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-789'), \
-             patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.2]):
+             patch('time.time', side_effect=[1000.0, 1000.0, 1000.0, 1000.0, 1000.2]):
 
             mock_response = Response(status_code=404)
 
