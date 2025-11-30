@@ -195,6 +195,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # This mirrors the patterns used in TenantContextMiddleware
         chama_patterns = [
             re.compile(r'/chamas/(\d+)/?.*'),  # /chamas/{id}/...
+            re.compile(r'/api/v\d+/chamas/(\d+)/?.*'),  # /api/v1/chamas/{id}/...
         ]
 
         for pattern in chama_patterns:
