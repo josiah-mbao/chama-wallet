@@ -10,18 +10,17 @@ def recompute_chama_summaries(chama_id: int):
     Recompute chama statistics and summaries (total contributions, member count, etc.)
     This is useful for performance optimization - we can cache expensive calculations.
     """
+    # Set tenant context for this entire background task
+    from backend.database import current_tenant, get_db
+    token = current_tenant.set(chama_id)
+
     try:
-        # Set tenant context for this entire background task
-        from backend.database import current_tenant, get_db
-        token = current_tenant.set(chama_id)
+        db = next(get_db())
 
-        try:
-            db = next(get_db())
-
-            # Import here to avoid circular imports
-            from backend.models.chama import Chama
-            from backend.models.membership import Membership
-            from backend.models.contribution import Contribution
+        # Import here to avoid circular imports
+        from backend.models.chama import Chama
+        from backend.models.membership import Membership
+        from backend.models.contribution import Contribution
 
         # Get chama details
         chama = db.query(Chama).filter(Chama.id == chama_id).first()
@@ -98,6 +97,7 @@ def recompute_chama_summaries(chama_id: int):
         logger.error(f"Error recomputing chama summaries: {str(e)}")
     finally:
         db.close()
+        current_tenant.reset(token)
 
 
 @celery_app.task(name='backend.tasks.analytics.precompute_chama_analytics')
