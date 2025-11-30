@@ -207,7 +207,7 @@ class TestRequestLoggingMiddleware:
         mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-123'), \
-             patch('time.time', side_effect=[1000.0, 1000.5]):  # 0.5s duration
+             patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.5]):  # 0.5s duration
 
             mock_response = Response(status_code=200)
 
@@ -256,7 +256,7 @@ class TestRequestLoggingMiddleware:
         mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-456'), \
-             patch('time.time', side_effect=[1000.0, 1000.3]):
+             patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.3]):
 
             async def failing_app(r):
                 raise ValueError("Processing error")
@@ -280,7 +280,7 @@ class TestRequestLoggingMiddleware:
         mock_request.url = mock_url
 
         with patch('backend.logging_config.get_request_correlation_id', return_value='corr-789'), \
-             patch('time.time', side_effect=[1000.0, 1000.2]):
+             patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.2]):
 
             mock_response = Response(status_code=404)
 
@@ -368,7 +368,7 @@ class TestPerformanceMonitoringMiddleware:
         mock_url.path = "/chamas/123/analytics"
         mock_request.url = mock_url
 
-        with patch('time.time', side_effect=[1000.0, 1002.5]):  # 2.5s duration (over threshold)
+        with patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1002.5]):  # 2.5s duration
 
             mock_response = Response(status_code=200)
 
@@ -390,7 +390,7 @@ class TestPerformanceMonitoringMiddleware:
         mock_url.path = "/chamas/123/summary"
         mock_request.url = mock_url
 
-        with patch('time.time', side_effect=[1000.0, 1000.5]):  # 0.5s duration (under threshold)
+        with patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.5]):  # 0.5s duration
 
             mock_response = Response(status_code=200)
 
@@ -412,7 +412,7 @@ class TestPerformanceMonitoringMiddleware:
         mock_url.path = "/api/v1/chamas/456/members"
         mock_request.url = mock_url
 
-        with patch('time.time', side_effect=[1000.0, 1000.8]):  # 0.8s duration (over custom threshold)
+        with patch('backend.middleware.time.time', side_effect=[1000.0, 1000.0, 1000.8]):  # 0.8s duration
 
             mock_response = Response(status_code=200)
 
