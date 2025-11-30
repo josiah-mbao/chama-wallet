@@ -46,7 +46,8 @@ class TestTenantContextMiddleware:
         from backend.middleware import TenantContextMiddleware
         return TenantContextMiddleware(mock_app)
 
-    def test_tenant_extraction_from_chama_route(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_tenant_extraction_from_chama_route(self, middleware, mock_request):
         """Test tenant ID extraction from /chamas/{id}/ routes"""
         mock_request.url = URL("http://testserver/chamas/456/contributions")
 
@@ -55,10 +56,10 @@ class TestTenantContextMiddleware:
              patch('backend.metrics.end_request_metrics') as mock_end:
 
             mock_tenant.set.return_value = "token_123"
-            mock_app = MagicMock(return_value=Response(status_code=200))
+            mock_response = Response(status_code=200)
 
             # Call dispatch
-            result = middleware.dispatch(mock_request, lambda: mock_app())
+            result = await middleware.dispatch(mock_request, lambda: mock_response)
 
             # Verify tenant was extracted and set
             mock_tenant.set.assert_called_once_with(456)
@@ -66,7 +67,8 @@ class TestTenantContextMiddleware:
             mock_end.assert_called_once_with("GET", "/chamas/456/contributions", 200)
             mock_tenant.reset.assert_called_once_with("token_123")
 
-    def test_tenant_extraction_from_versioned_chama_route(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_tenant_extraction_from_versioned_chama_route(self, middleware, mock_request):
         """Test tenant ID extraction from /api/v1/chamas/{id}/ routes"""
         mock_request.url = URL("http://testserver/api/v1/chamas/789/members")
 
@@ -75,16 +77,17 @@ class TestTenantContextMiddleware:
              patch('backend.metrics.end_request_metrics') as mock_end:
 
             mock_tenant.set.return_value = "token_456"
-            mock_app = MagicMock(return_value=Response(status_code=200))
+            mock_response = Response(status_code=200)
 
-            result = middleware.dispatch(mock_request, lambda: mock_app())
+            result = await middleware.dispatch(mock_request, lambda: mock_response)
 
             mock_tenant.set.assert_called_once_with(789)
             mock_start.assert_called_once_with(789)
             mock_end.assert_called_once_with("GET", "/api/v1/chamas/789/members", 200)
             mock_tenant.reset.assert_called_once_with("token_456")
 
-    def test_no_tenant_context_for_non_chama_routes(self, middleware, mock_request):
+    @pytest.mark.asyncio
+    async def test_no_tenant_context_for_non_chama_routes(self, middleware, mock_request):
         """Test no tenant context for routes not involving chamas"""
         mock_request.url = URL("http://testserver/users/token")
 
@@ -92,9 +95,9 @@ class TestTenantContextMiddleware:
              patch('backend.metrics.start_request_metrics') as mock_start, \
              patch('backend.metrics.end_request_metrics') as mock_end:
 
-            mock_app = MagicMock(return_value=Response(status_code=200))
+            mock_response = Response(status_code=200)
 
-            result = middleware.dispatch(mock_request, lambda: mock_app())
+            result = await middleware.dispatch(mock_request, lambda: mock_response)
 
             # Verify tenant context was NOT set
             mock_tenant.set.assert_not_called()
