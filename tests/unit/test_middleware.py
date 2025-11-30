@@ -221,7 +221,7 @@ class TestRequestLoggingMiddleware:
             assert len(request_log) == 1
             assert "GET /chamas/123/summary" in request_log[0].message
             assert "Client: 127.0.0.1" in request_log[0].message
-            assert request_log[0].extra['correlation_id'] == 'corr-123'
+            assert request_log[0].correlation_id == 'corr-123'
 
             # Check response log
             response_log = [r for r in caplog.records if "Response:" in r.message]
@@ -270,7 +270,7 @@ class TestRequestLoggingMiddleware:
             assert "GET /chamas/123/contributions" in error_logs[0].message
             assert "Processing error" in error_logs[0].message
             assert "Duration: 0.3000s" in error_logs[0].message
-            assert error_logs[0].extra['correlation_id'] == 'corr-456'
+            assert error_logs[0].correlation_id == 'corr-456'
 
     @pytest.mark.asyncio
     async def test_warning_log_for_error_responses(self, middleware, mock_request, caplog):
