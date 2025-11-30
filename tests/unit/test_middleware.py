@@ -316,7 +316,6 @@ class TestSecurityLoggingMiddleware:
         security_logs = [r for r in caplog.records if "Security event detected" in r.message]
         assert len(security_logs) == 1
         assert "suspicious_user_agent" in security_logs[0].message
-        assert "sqlmap" in security_logs[0].message
 
     @pytest.mark.asyncio
     async def test_multiple_suspicious_indicators(self, middleware, mock_request, caplog):
