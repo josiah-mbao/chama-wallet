@@ -276,7 +276,7 @@ class TestBroadcastingFunctions:
 
             await broadcast_member_added(chama_id, summary, analytics)
 
-            mock_broadcast.assert_called_once_with(chama_id, "MEMBER_ADDED", Mock())
+            mock_broadcast.assert_called_once_with(chama_id, "MEMBER_ADDED", {"summary": None, "analytics": None, "contribution": None})
 
     @pytest.mark.asyncio
     async def test_broadcast_chama_updated(self):
@@ -291,7 +291,7 @@ class TestBroadcastingFunctions:
 
             await broadcast_chama_updated(chama_id, summary, analytics)
 
-            mock_broadcast.assert_called_once_with(chama_id, "CHAMA_UPDATED", Mock())
+            mock_broadcast.assert_called_once_with(chama_id, "CHAMA_UPDATED", {"summary": None, "analytics": None, "contribution": None})
 
     @pytest.mark.asyncio
     async def test_broadcast_analytics_updated(self):
@@ -306,7 +306,7 @@ class TestBroadcastingFunctions:
 
             await broadcast_analytics_updated(chama_id, summary, analytics)
 
-            mock_broadcast.assert_called_once_with(chama_id, "ANALYTICS_UPDATED", Mock())
+            mock_broadcast.assert_called_once_with(chama_id, "ANALYTICS_UPDATED", {"summary": None, "analytics": None, "contribution": None})
 
 
 class TestWebSocketEndpoint:
