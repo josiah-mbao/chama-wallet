@@ -29,7 +29,7 @@ class TestCreateTenantSchema:
 
     @patch('backend.schema_management.AdminSessionLocal')
     @patch('backend.schema_management.get_schema_name')
-    @patch('backend.schema_management.os.getenv')
+    @patch('os.getenv')
     def test_create_schema_postgresql_new_schema(self, mock_getenv, mock_get_schema_name, mock_admin_session):
         """Test creating a new schema in PostgreSQL."""
         # Setup mocks
@@ -53,7 +53,7 @@ class TestCreateTenantSchema:
 
     @patch('backend.schema_management.AdminSessionLocal')
     @patch('backend.schema_management.get_schema_name')
-    @patch('backend.schema_management.os.getenv')
+    @patch('os.getenv')
     def test_create_schema_postgresql_existing_schema(self, mock_getenv, mock_get_schema_name, mock_admin_session):
         """Test handling existing schema in PostgreSQL."""
         # Setup mocks
@@ -76,7 +76,7 @@ class TestCreateTenantSchema:
 
     @patch('backend.schema_management.AdminSessionLocal')
     @patch('backend.schema_management.get_schema_name')
-    @patch('backend.schema_management.os.getenv')
+    @patch('os.getenv')
     def test_create_schema_non_postgresql(self, mock_getenv, mock_get_schema_name, mock_admin_session):
         """Test schema creation is skipped for non-PostgreSQL databases."""
         # Setup mocks
@@ -93,7 +93,7 @@ class TestCreateTenantSchema:
 
     @patch('backend.schema_management.AdminSessionLocal')
     @patch('backend.schema_management.get_schema_name')
-    @patch('backend.schema_management.os.getenv')
+    @patch('os.getenv')
     def test_create_schema_database_error(self, mock_getenv, mock_get_schema_name, mock_admin_session):
         """Test handling database errors during schema creation."""
         # Setup mocks
@@ -307,7 +307,7 @@ class TestSchemaManagementIntegration:
     @patch('backend.schema_management.create_tenant_schema')
     @patch('backend.schema_management.AdminSessionLocal')
     @patch('backend.schema_management.get_schema_name')
-    @patch('backend.schema_management.os.getenv')
+    @patch('os.getenv')
     def test_complete_tenant_lifecycle(self, mock_getenv, mock_get_schema_name,
                                      mock_admin_session, mock_create_schema, mock_init_schema):
         """Test complete tenant database lifecycle."""
