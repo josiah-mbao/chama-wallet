@@ -8,8 +8,7 @@ from fastapi import Request, HTTPException
 from fastapi.testclient import TestClient
 from backend.rate_limiting import (
     InMemoryRateLimiter,
-    RateLimitMiddleware,
-    test_rate_limiting
+    RateLimitMiddleware
 )
 
 
