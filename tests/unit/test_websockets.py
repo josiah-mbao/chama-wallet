@@ -219,6 +219,8 @@ class TestBroadcastingFunctions:
     async def test_broadcast_chama_update(self):
         """Test generic chama update broadcasting."""
         with patch('backend.routers.websockets.manager') as mock_manager:
+            # Configure broadcast method to be an AsyncMock
+            mock_manager.broadcast = AsyncMock()
             from backend.routers.websockets import broadcast_chama_update
 
             chama_id = 1
@@ -227,7 +229,7 @@ class TestBroadcastingFunctions:
 
             await broadcast_chama_update(chama_id, event_type, payload)
 
-            # Verify broadcast was called with correct structure
+            # Verify broadcast was awaited with correct structure
             call_args = mock_manager.broadcast.call_args
             assert call_args[0][0] == chama_id
 
