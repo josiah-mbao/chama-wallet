@@ -270,8 +270,9 @@ class TestBroadcastingFunctions:
             from backend.routers.websockets import broadcast_member_added
 
             chama_id = 1
-            summary = Mock()
-            analytics = Mock()
+            # Pass None for optional parameters to avoid validation issues
+            summary = None
+            analytics = None
 
             await broadcast_member_added(chama_id, summary, analytics)
 
@@ -284,8 +285,9 @@ class TestBroadcastingFunctions:
             from backend.routers.websockets import broadcast_chama_updated
 
             chama_id = 1
-            summary = Mock()
-            analytics = Mock()
+            # Pass None for optional parameters to avoid validation issues
+            summary = None
+            analytics = None
 
             await broadcast_chama_updated(chama_id, summary, analytics)
 
@@ -298,8 +300,9 @@ class TestBroadcastingFunctions:
             from backend.routers.websockets import broadcast_analytics_updated
 
             chama_id = 1
-            summary = Mock()
-            analytics = Mock()
+            # Pass None for optional parameters to avoid validation issues
+            summary = None
+            analytics = None
 
             await broadcast_analytics_updated(chama_id, summary, analytics)
 
