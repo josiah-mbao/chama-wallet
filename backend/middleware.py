@@ -218,3 +218,101 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                 # Ensure metrics are recorded even on failure
                 end_request_metrics(request.method, path, 500)
                 raise
+
+
+class SecurityLoggingMiddleware(BaseHTTPMiddleware):
+    """Middleware to log security-related events"""
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.security_logger = logging.getLogger("chama_wallet.security")
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Log suspicious activities
+        suspicious_indicators = []
+
+        # Check for common attack patterns (simplified examples)
+        user_agent = request.headers.get("user-agent", "").lower()
+        if any(pattern in user_agent for pattern in ["sqlmap", "nmap", "nikto"]):
+            suspicious_indicators.append("suspicious_user_agent")
+
+        # Check for excessive request rate (would need rate limiting)
+        # This is placeholder - actual implementation would use Redis/caching
+
+        # Log security events
+        if suspicious_indicators:
+            correlation_id = getattr(logging, 'correlation_id', 'unknown')
+            self.security_logger.warning(
+                f"Security event detected: {request.method} {request.url.path} - "
+                f"Client: {request.client.host if request.client else 'unknown'} - "
+                f"Indicators: {', '.join(suspicious_indicators)}",
+                extra={"correlation_id": correlation_id}
+            )
+
+        return response
+
+
+class PerformanceMonitoringMiddleware(BaseHTTPMiddleware):
+    """Middleware to log performance metrics for monitoring"""
+
+    def __init__(self, app, slow_request_threshold: float = 2.0):
+        super().__init__(app)
+        self.slow_request_threshold = slow_request_threshold
+        self.performance_logger = logging.getLogger("chama_wallet.performance")
+
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+
+        # Log slow requests
+        if process_time > self.slow_request_threshold:
+            correlation_id = getattr(logging, 'correlation_id', 'unknown')
+            self.performance_logger.warning(
+                f"Slow request: {request.method} {request.url.path} - "
+                f"Duration: {process_time:.4f}s - Status: {response.status_code}",
+                extra={"correlation_id": correlation_id}
+            )
+
+        # Log high error rates (would need metrics collection)
+        # This is placeholder - actual implementation would use Prometheus/statsd
+
+        return response
+
+
+class APIVersioningMiddleware(BaseHTTPMiddleware):
+    """Middleware to add API versioning headers and validate version requests"""
+
+    def __init__(self, app):
+        super().__init__(app)
+        from api import SUPPORTED_VERSIONS, DEFAULT_VERSION
+
+    async def dispatch(self, request: Request, call_next):
+        # Extract API version from URL path
+        path = request.url.path
+        api_version = None
+
+        if path.startswith("/api/v"):
+            # Extract version from /api/v{version}/
+            version_part = path.split("/api/v")[1].split("/")[0]
+            try:
+                api_version = f"v{version_part}"
+            except:
+                api_version = None
+
+        response = await call_next(request)
+
+        # Add versioning headers to response
+        if api_version and api_version in ["v1", "v2"]:
+            response.headers["API-Version"] = api_version
+            response.headers["API-Supported-Versions"] = ",".join(["v1", "v2"])
+        else:
+            # Default headers for non-versioned routes
+            response.headers["API-Version"] = "v1"  # Current default
+            response.headers["API-Supported-Versions"] = ",".join(["v1", "v2"])
+
+        response.headers["API-Deprecated-Versions"] = ""  # None currently deprecated
+
+        return response
