@@ -252,10 +252,12 @@ class TestMigrateExistingChamas:
         mock_session_instance = Mock()
         mock_admin_session.return_value.__enter__.return_value = mock_session_instance
 
-        # Mock existing chamas
-        mock_chama_rows = [Mock(), Mock()]
-        mock_chama_rows[0].__getitem__.return_value = 1
-        mock_chama_rows[1].__getitem__.return_value = 2
+        # Mock existing chamas - create objects that support indexing
+        mock_chama_row1 = Mock()
+        mock_chama_row1.__getitem__ = Mock(return_value=1)
+        mock_chama_row2 = Mock()
+        mock_chama_row2.__getitem__ = Mock(return_value=2)
+        mock_chama_rows = [mock_chama_row1, mock_chama_row2]
         mock_session_instance.execute.return_value.fetchall.return_value = mock_chama_rows
 
         # Call function
