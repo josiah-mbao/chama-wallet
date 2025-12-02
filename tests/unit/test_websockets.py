@@ -252,8 +252,9 @@ class TestBroadcastingFunctions:
             contribution.amount = 100.50
             contribution.created_at = datetime.now()  # Proper datetime object
 
-            summary = Mock()
-            analytics = Mock()
+            # Pass None for optional parameters to avoid validation issues
+            summary = None
+            analytics = None
 
             await broadcast_contribution_created(chama_id, contribution, summary, analytics)
 
