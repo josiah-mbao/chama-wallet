@@ -3,6 +3,7 @@ Unit tests for WebSocket router functionality.
 """
 import asyncio
 import json
+from datetime import datetime
 import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
@@ -245,7 +246,12 @@ class TestBroadcastingFunctions:
             from backend.routers.websockets import broadcast_contribution_created
 
             chama_id = 1
+            # Configure Mock objects to pass Pydantic validation
             contribution = Mock()
+            contribution.id = 123
+            contribution.amount = 100.50
+            contribution.created_at = datetime.now()  # Proper datetime object
+
             summary = Mock()
             analytics = Mock()
 
