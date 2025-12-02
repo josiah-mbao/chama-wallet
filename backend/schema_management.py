@@ -2,6 +2,7 @@
 Schema management utilities for multi-tenant chama-wallet.
 Handles schema creation and tenant database operations.
 """
+import os
 from sqlalchemy import text
 from backend.database import AdminSessionLocal, get_schema_name, Base, get_tenant_engine
 import logging
@@ -22,7 +23,6 @@ def create_tenant_schema(tenant_id: int) -> bool:
     schema_name = get_schema_name(tenant_id)
 
     # Skip schema operations for non-PostgreSQL databases (like SQLite in tests)
-    import os
     db_url = os.getenv('DATABASE_URL', '')
     if not db_url.startswith('postgresql'):
         logger.info(f"Skipping schema creation for {schema_name} (non-PostgreSQL database)")
