@@ -137,8 +137,8 @@ class TestConnectionManager:
         await connection_manager.connect(mock_websocket, chama_id)
         await connection_manager.broadcast(chama_id, message)
 
-        # Connection should be cleaned up due to exception
-        assert len(connection_manager.active_connections[chama_id]) == 0
+        # Connection should be cleaned up due to exception - entire chama entry removed
+        assert chama_id not in connection_manager.active_connections
 
 
 class TestWebSocketAuthentication:
