@@ -245,18 +245,16 @@ class TestMigrateExistingChamas:
     """Test migration utility for existing chamas."""
 
     @patch('backend.schema_management.setup_tenant_database')
-    @patch('backend.schema_management.AdminSessionLocal')
+    @patch('backend.database.AdminSessionLocal')
     def test_migrate_existing_chamas(self, mock_admin_session, mock_setup_db):
         """Test migrating existing chamas to schemas."""
         # Setup mocks
         mock_session_instance = Mock()
         mock_admin_session.return_value.__enter__.return_value = mock_session_instance
 
-        # Mock existing chamas - create objects that support indexing
-        mock_chama_row1 = Mock()
-        mock_chama_row1.__getitem__ = Mock(return_value=1)
-        mock_chama_row2 = Mock()
-        mock_chama_row2.__getitem__ = Mock(return_value=2)
+        # Mock existing chamas - create tuple-like objects that support indexing
+        mock_chama_row1 = (1,)  # Tuple with single element
+        mock_chama_row2 = (2,)  # Tuple with single element
         mock_chama_rows = [mock_chama_row1, mock_chama_row2]
         mock_session_instance.execute.return_value.fetchall.return_value = mock_chama_rows
 
@@ -270,7 +268,7 @@ class TestMigrateExistingChamas:
         mock_setup_db.assert_any_call(2)
 
     @patch('backend.schema_management.setup_tenant_database')
-    @patch('backend.schema_management.AdminSessionLocal')
+    @patch('backend.database.AdminSessionLocal')
     def test_migrate_existing_chamas_empty(self, mock_admin_session, mock_setup_db):
         """Test migrating when no existing chamas."""
         # Setup mocks
@@ -287,7 +285,7 @@ class TestMigrateExistingChamas:
         mock_setup_db.assert_not_called()
 
     @patch('backend.schema_management.setup_tenant_database')
-    @patch('backend.schema_management.AdminSessionLocal')
+    @patch('backend.database.AdminSessionLocal')
     def test_migrate_existing_chamas_database_error(self, mock_admin_session, mock_setup_db):
         """Test handling database errors during migration."""
         # Setup mocks
