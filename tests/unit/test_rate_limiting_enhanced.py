@@ -191,16 +191,23 @@ class TestRateLimitMiddleware:
         assert result == mock_response
 
     @pytest.mark.asyncio
-    async def test_rate_limit_blocked(self, rate_limit_middleware, mock_request):
+    async def test_rate_limit_blocked(self, mock_request):
         """Test blocked requests raise HTTPException."""
+        # Create middleware without exempt IPs for this test
+        middleware = RateLimitMiddleware(
+            app=Mock(),
+            exempt_ips=[],  # No exempt IPs
+            exempt_paths=[]
+        )
         mock_request.url.path = "/api/test"
+        mock_request.client.host = "192.168.1.100"  # Non-exempt IP
 
         # Mock limiter to block request
-        rate_limit_middleware.limiter.is_allowed = Mock(return_value=(False, 5.5))
+        middleware.limiter.is_allowed = Mock(return_value=(False, 5.5))
 
         with patch('backend.rate_limiting.record_rate_limit_violation') as mock_record:
             with pytest.raises(HTTPException) as exc_info:
-                await rate_limit_middleware.dispatch(mock_request, AsyncMock())
+                await middleware.dispatch(mock_request, AsyncMock())
 
         # Should raise 429 error
         assert exc_info.value.status_code == 429
