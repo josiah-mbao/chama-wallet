@@ -85,7 +85,8 @@ class TestConnectionManager:
 
         connection_manager.disconnect(mock_websocket, chama_id)
 
-        assert len(connection_manager.active_connections[chama_id]) == 0
+        # After disconnecting the last connection, the chama_id should be removed from active_connections
+        assert chama_id not in connection_manager.active_connections
 
     def test_disconnect_empty_chama_cleanup(self, connection_manager, mock_websocket):
         """Test disconnecting last connection removes chama from active connections."""
@@ -321,8 +322,8 @@ class TestWebSocketEndpoint:
         # Disconnect
         manager.disconnect(mock_ws, chama_id)
 
-        # Verify connection removed
-        assert len(manager.active_connections[chama_id]) == 0
+        # Verify connection removed - after disconnecting last connection, chama_id is removed
+        assert chama_id not in manager.active_connections
 
     @pytest.mark.asyncio
     async def test_multiple_chamas_isolation(self):
