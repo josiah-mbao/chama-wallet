@@ -1,7 +1,7 @@
 # 🚀 **Chama Wallet API - Enterprise SaaS Platform**
 
 [![CI/CD Pipeline](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml/badge.svg)](https://github.com/josiah-mbao/chama-wallet/actions/workflows/tests.yml)
-[![Coverage Status](https://img.shields.io/badge/Coverage-72%25-green)](https://github.com/)
+[![Coverage Status](https://img.shields.io/badge/Coverage-78%25-green)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
@@ -46,7 +46,7 @@ Built to scale from MVP to enterprise with complete data isolation, automated bi
 * **📊 Usage Analytics:** Plan enforcement and billing cycle management
 
 ### **Production-Ready Features**
-* **🧪 Comprehensive Testing:** 179 tests with CI/CD pipeline and 72% coverage
+* **🧪 Comprehensive Testing:** 225 tests with CI/CD pipeline and 78% coverage
 * **🐳 Complete Dockerization:** Multi-service container orchestration
 * **📊 Monitoring & Logging:** Structured logging with correlation IDs
 * **🛡️ Security:** Rate limiting, input validation, and secure authentication
@@ -417,7 +417,7 @@ docker-compose logs celery_worker
 - **WebSocket Broadcasting:** Sub-millisecond event delivery
 - **Background Processing:** Automatic analytics recomputation
 - **Concurrent Users:** Scales to 1000s of Chama members
-- **CI/CD Tests:** **179 tests passing** with 72% coverage
+- **CI/CD Tests:** **225 tests passing** with 78% coverage
 
 ---
 
@@ -428,23 +428,33 @@ docker-compose logs celery_worker
 ### **Automated Test Suite**
 Our comprehensive testing infrastructure ensures production reliability:
 
-- **🧪 179+ Automated Tests:** Covering API endpoints, business logic, middleware, and data integrity
-- **📊 72% Code Coverage:** Measuring test effectiveness across backend modules
+- **🧪 225+ Automated Tests:** Covering API endpoints, business logic, middleware, and data integrity
+- **📊 78% Code Coverage:** Measuring test effectiveness across backend modules
 - **⚡ CI/CD Pipeline:** GitHub Actions with automated test execution on every commit
 - **🔄 Multi-Environment Testing:** Compatible with SQLite (local) and PostgreSQL (production)
 
 ### **Test Categories**
 ```bash
 tests/
-├── integration/test_api.py     # ✅ End-to-end API flow testing
+├── integration/
+│   ├── test_api.py              # ✅ End-to-end API flow testing
+│   ├── test_billing.py          # ✅ Billing & payment integration
+│   ├── test_billing_api.py      # ✅ Billing API endpoints
+│   └── test_celery_tasks.py     # ✅ Background task processing
 ├── unit/
-│   ├── test_users.py           # ✅ Authentication & user management
-│   ├── test_crud.py            # ✅ Database operations
-│   ├── test_crud_extended.py   # ✅ Advanced CRUD functions
-│   ├── test_middleware.py      # ✅ Request/Response middleware
-│   ├── test_schemas.py         # ✅ Data validation & Pydantic
-│   ├── test_security.py        # ✅ JWT tokens & password hashing
-│   └── test_exception_handlers.py # ⚠️ Exception handling (CI compatibility)
+│   ├── test_billing_unit.py     # ✅ Payment processing logic
+│   ├── test_cache_utils.py      # ✅ Caching mechanisms
+│   ├── test_crud.py             # ✅ Database operations
+│   ├── test_crud_extended.py    # ✅ Advanced CRUD functions
+│   ├── test_main.py             # ✅ FastAPI application setup
+│   ├── test_middleware.py       # ✅ Request/Response middleware
+│   ├── test_rate_limiting.py    # ✅ API rate limiting
+│   ├── test_schema_management.py # ✅ Multi-tenant schema handling
+│   ├── test_schemas.py          # ✅ Data validation & Pydantic
+│   ├── test_security.py         # ✅ JWT tokens & password hashing
+│   ├── test_security_headers.py # ✅ Security headers validation
+│   └── test_websockets.py       # ✅ WebSocket real-time features
+└── test_users.py                # ✅ User management integration
 ```
 
 ### **Running Tests**
@@ -466,12 +476,23 @@ pytest --cov=backend --cov-report=html  # HTML report in htmlcov/
 ### **Coverage Report Breakdown**
 | Module | Coverage | Key Tested Components |
 |--------|----------|----------------------|
-| **crud.py** | 98% | Database operations, chama lifecycle |
-| **routers/** | 55% | User auth, chama management |
-| **middleware.py** | 34% | Request processing, tenant context |
-| **main.py** | 71% | Exception handlers |
-| **security.py** | 67% | JWT authentication |
-| **Total Backend** | **67%** | Core business logic tested |
+| **Models** | 100% | SQLAlchemy data models (User, Chama, etc.) |
+| **Schemas** | 100% | Pydantic validation models |
+| **CRUD** | 100% | Database operations & business logic |
+| **Config/Cache** | 95% | Environment configuration & Redis caching |
+| **Middleware** | 95% | Request processing & tenant context |
+| **Users Router** | 92% | Authentication & user management |
+| **Billing Router** | 90% | Subscription & payment processing |
+| **Schema Management** | 99% | Multi-tenant database schema handling |
+| **Main** | 99% | FastAPI application setup |
+| **WebSockets** | 67% | Real-time event broadcasting |
+| **Security** | 68% | JWT authentication & password hashing |
+| **Rate Limiting** | 56% | API rate limiting & throttling |
+| **Paystack Client** | 48% | Payment gateway integration |
+| **Background Tasks** | 40% | Analytics computation & notifications |
+| **Metrics** | 70% | Application monitoring & logging |
+| **Exceptions** | 69% | Error handling & custom exceptions |
+| **Total Backend** | **78%** | Enterprise-grade code quality |
 
 The platform provides a solid foundation for fintech expansion:
 
