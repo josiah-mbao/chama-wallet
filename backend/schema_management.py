@@ -134,8 +134,15 @@ def migrate_existing_chamas():
 
     try:
         with AdminSessionLocal() as session:
-            # Get all existing chama IDs
-            result = session.execute(text("SELECT id FROM public.chamas")).fetchall()
+            # Get all existing chama IDs - use database-dialect aware table name
+            db_url = os.getenv('DATABASE_URL', '')
+            if db_url.startswith('postgresql'):
+                table_name = "public.chamas"
+            else:
+                # For SQLite and other databases that don't support schemas
+                table_name = "chamas"
+
+            result = session.execute(text(f"SELECT id FROM {table_name}")).fetchall()
 
             for chama_row in result:
                 chama_id = chama_row[0]
