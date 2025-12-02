@@ -155,8 +155,8 @@ class TestWebSocketAuthentication:
     async def test_websocket_authentication_with_valid_token(self):
         """Test WebSocket accepts authenticated user who is chama member."""
         # Mock the database and authentication components
-        with patch('backend.routers.websockets.decode_access_token') as mock_decode, \
-             patch('backend.routers.websockets.get_db') as mock_get_db, \
+        with patch('backend.security.decode_access_token') as mock_decode, \
+             patch('backend.database.get_db') as mock_get_db, \
              patch('backend.routers.websockets.manager') as mock_manager:
 
             # Setup mocks
@@ -182,7 +182,7 @@ class TestWebSocketAuthentication:
     @pytest.mark.asyncio
     async def test_websocket_rejects_invalid_token(self):
         """Test WebSocket rejects connection with invalid token."""
-        with patch('backend.routers.websockets.decode_access_token') as mock_decode:
+        with patch('backend.security.decode_access_token') as mock_decode:
             mock_decode.side_effect = Exception("Invalid token")
 
             mock_ws = AsyncMock()
@@ -194,8 +194,8 @@ class TestWebSocketAuthentication:
     @pytest.mark.asyncio
     async def test_websocket_rejects_non_member(self):
         """Test WebSocket rejects user who is not a chama member."""
-        with patch('backend.routers.websockets.decode_access_token') as mock_decode, \
-             patch('backend.routers.websockets.get_db') as mock_get_db:
+        with patch('backend.security.decode_access_token') as mock_decode, \
+             patch('backend.database.get_db') as mock_get_db:
 
             mock_token_data = Mock()
             mock_token_data.email = "test@example.com"
