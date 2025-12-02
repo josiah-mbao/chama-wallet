@@ -13,6 +13,19 @@ class Settings(BaseSettings):
     PAYSTACK_PUBLIC_KEY: str = "pk_test_default_for_ci_cd"
     PAYSTACK_WEBHOOK_SECRET: str = ""  # Optional webhook signature verification
 
+    # SSL/HTTPS Configuration
+    ENABLE_HTTPS: bool = False  # Set to True for production
+    SSL_CERT_PATH: str = "/app/ssl/cert.pem"  # Path to SSL certificate
+    SSL_KEY_PATH: str = "/app/ssl/key.pem"    # Path to SSL private key
+    FORCE_HTTPS_REDIRECT: bool = False       # Force HTTP to HTTPS redirect
+
+    # Security Headers Configuration
+    ENABLE_SECURITY_HEADERS: bool = True     # Enable comprehensive security headers
+    CSP_ENABLED: bool = True                 # Enable Content Security Policy
+    HSTS_MAX_AGE: int = 31536000             # HSTS max-age in seconds (1 year)
+    HSTS_INCLUDE_SUBDOMAINS: bool = True     # Include subdomains in HSTS
+    HSTS_PRELOAD: bool = False               # Enable HSTS preload (only for production)
+
     # Extract Redis host and port for easier access
     @property
     def REDIS_HOST(self) -> str:

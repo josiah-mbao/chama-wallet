@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chama-wallet-api-prod
+    working_dir: /app
+    command: >
+      sh -c "
+        export PYTHONPATH=/app &&
+        echo 'Waiting for PostgreSQL at db:5432 to be ready...' &&
+        until nc -z -v -w30 db 5432; do echo 'PostgreSQL is unavailable - sleeping'; sleep 1; done &&
+        echo 'PostgreSQL is up and running. Applying migrations.' &&
+        cd backend && alembic upgrade head &&
+        echo 'Starting FastAPI application with HTTPS' &&
+        uvicorn backend.main:app --host 0.0.0.0 --port 443 --ssl-keyfile /app/ssl/key.pem --ssl-certfile /app/ssl/cert.pem
+      "
+    ports:
+      - "443:443"  # HTTPS port
+    volumes:
+      - .:/app
+      - ./ssl:/app/ssl:ro  # Mount SSL certificates as read-only
+    env_file:
+      - ./backend/.env.prod  # Use production environment file
+    environment:
+      - ENABLE_HTTPS=true
+      - FORCE_HTTPS_REDIRECT=true
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: chama-wallet-db-prod
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USER:-chamauser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme_in_production}
+      - POSTGRES_DB=${DB_NAME:-chamadb}
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: chama-wallet-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chama-wallet-celery-prod
+    working_dir: /app
+    command: ["sh", "-c", "PYTHONPATH=/app celery -A backend.celery_app worker --loglevel=info"]
+    volumes:
+      - .:/app
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      - ENABLE_HTTPS=true
+    depends_on:
+      - redis
+      - db
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chama-wallet-prometheus-prod
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_prod_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.listen-address=:9090'
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chama-wallet-grafana-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-changeme_in_production}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://your-domain.com/grafana  # Update with your domain
+    volumes:
+      - grafana_prod_data:/var/lib/grafana
+      - ./monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/chama-dashboard.json
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  prometheus_prod_data:
+  grafana_prod_data:
+
+networks:
+  default:
+    name: chama-wallet-prod

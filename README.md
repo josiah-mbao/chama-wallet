@@ -248,6 +248,76 @@ docker-compose run --rm api alembic upgrade head
 
 ---
 
+## 🔒 **HTTPS/SSL Configuration**
+
+### **Development SSL Setup**
+For local development with HTTPS:
+
+```bash
+# Generate self-signed SSL certificates (development only)
+./generate_ssl_cert.sh
+
+# Update .env file for HTTPS
+echo "ENABLE_HTTPS=true" >> backend/.env
+echo "FORCE_HTTPS_REDIRECT=true" >> backend/.env
+
+# Restart containers
+docker-compose down && docker-compose up --build
+```
+
+**⚠️ WARNING:** Self-signed certificates will show browser security warnings. Use only for development!
+
+### **Production SSL Setup**
+
+#### **Option 1: Let's Encrypt (Recommended)**
+```bash
+# Install certbot
+sudo apt-get update && sudo apt-get install certbot
+
+# Generate certificates (stop web server first if running on port 80/443)
+sudo certbot certonly --standalone -d yourdomain.com
+
+# Certificates will be saved in /etc/letsencrypt/live/yourdomain.com/
+```
+
+#### **Option 2: Cloud Provider Certificates**
+- **AWS:** Use AWS Certificate Manager (ACM)
+- **Azure:** Use Azure Key Vault or App Service Certificates
+- **GCP:** Use Google Cloud Certificate Manager
+
+### **Production Environment Setup**
+```bash
+# 1. Copy production environment template
+cp backend/.env.prod.example backend/.env.prod
+
+# 2. Edit with your production settings
+nano backend/.env.prod
+
+# 3. Mount SSL certificates in docker-compose.prod.yml
+# Update the volumes section to point to your certificate paths
+
+# 4. Deploy with production compose
+docker-compose -f docker-compose.prod.yml up --build
+```
+
+### **SSL Configuration Options**
+```bash
+# Environment Variables
+ENABLE_HTTPS=true              # Enable SSL/TLS
+SSL_CERT_PATH=/path/to/cert.pem # Path to SSL certificate
+SSL_KEY_PATH=/path/to/key.pem   # Path to private key
+FORCE_HTTPS_REDIRECT=true       # Redirect HTTP to HTTPS
+```
+
+### **Security Headers Included**
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `X-Forwarded-Proto` checking for HTTPS redirect
+- `Strict-Transport-Security` (when HTTPS enabled)
+
+---
+
 ## 🧪 **Testing the Real-Time API**
 
 ### **Authentication Flow**

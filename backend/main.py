@@ -13,7 +13,9 @@ from backend.schemas import ErrorResponse, ValidationErrorResponse, ValidationEr
 from backend.logging_config import setup_logging
 from backend.middleware import (
     RequestLoggingMiddleware,
-    TenantContextMiddleware
+    TenantContextMiddleware,
+    HTTPSRedirectMiddleware,
+    SecurityHeadersMiddleware
 )
 from backend.rate_limiting import RateLimitMiddleware
 from backend.metrics import get_prometheus_metrics, get_metrics_summary
@@ -44,8 +46,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add middleware (order matters - prometheus first, then rate limiting, then request logging, then tenant context)
+# Add middleware (order matters - prometheus first, then HTTPS redirect, then security headers, then rate limiting, then request logging, then tenant context)
 app.add_middleware(PrometheusMiddleware, app_name="chama-wallet")
+app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(TenantContextMiddleware)

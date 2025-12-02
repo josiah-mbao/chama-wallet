@@ -1,219 +1,101 @@
-# backend/middleware.py
-import time
-import logging
-import re
-from fastapi import Request, Response, HTTPException
+"""
+Middleware for HTTPS enforcement and security headers.
+"""
 from starlette.middleware.base import BaseHTTPMiddleware
-from backend.logging_config import get_request_correlation_id
-from backend.database import current_tenant
-from backend.metrics import start_request_metrics, end_request_metrics
+from starlette.responses import RedirectResponse
+from starlette.requests import Request
+from backend.config import settings
 
 
-class RequestLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware to log HTTP requests and responses with tenant metrics"""
-
-    def __init__(self, app, exclude_paths: list = None):
-        super().__init__(app)
-        self.exclude_paths = exclude_paths or ["/docs", "/redoc", "/openapi.json", "/favicon.ico"]
-        self.logger = logging.getLogger("chama_wallet.requests")
+class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to redirect HTTP requests to HTTPS in production.
+    """
 
     async def dispatch(self, request: Request, call_next):
-        # Skip logging for excluded paths
-        if request.url.path in self.exclude_paths:
-            return await call_next(request)
+        # Check if HTTPS redirect is enabled
+        if settings.FORCE_HTTPS_REDIRECT:
+            # Check if the request is already HTTPS
+            if request.headers.get("x-forwarded-proto", "").lower() != "https":
+                # Redirect to HTTPS
+                url = request.url.replace(scheme="https")
+                return RedirectResponse(url=url, status_code=301)
 
-        # Generate correlation ID for request tracing
-        correlation_id = get_request_correlation_id()
+        # Continue with the request
+        response = await call_next(request)
+        return response
 
-        # Start timer
-        start_time = time.time()
 
-        # Log request
-        self.logger.info(
-            f"Request: {request.method} {request.url.path} - "
-            f"Client: {request.client.host if request.client else 'unknown'} - "
-            f"User-Agent: {request.headers.get('user-agent', 'unknown')}",
-            extra={"correlation_id": correlation_id}
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Comprehensive middleware to add security headers to all responses.
+    Implements OWASP security headers recommendations for APIs.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Only add security headers if enabled
+        if not settings.ENABLE_SECURITY_HEADERS:
+            return response
+
+        # Content Security Policy - restrictive for APIs
+        if settings.CSP_ENABLED:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self'; "
+                "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: https:; "
+                "font-src 'self'; "
+                "connect-src 'self'; "
+                "media-src 'none'; "
+                "object-src 'none'; "
+                "frame-src 'none'; "
+                "frame-ancestors 'none'"
+            )
+
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # XSS protection (legacy, but still useful)
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Referrer policy
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Permissions policy - restrict browser features
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), "
+            "microphone=(), "
+            "camera=(), "
+            "magnetometer=(), "
+            "gyroscope=(), "
+            "speaker=(), "
+            "fullscreen=(), "
+            "payment=()"
         )
 
-        # Process the request
-        try:
-            response = await call_next(request)
-        except Exception as e:
-            # Log request failure
-            process_time = time.time() - start_time
-            self.logger.error(
-                f"Request failed: {request.method} {request.url.path} - "
-                f"Error: {str(e)} - Duration: {process_time:.4f}s",
-                extra={"correlation_id": correlation_id},
-                exc_info=True
-            )
-            raise
+        # Cross-Origin policies
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
 
-        # Calculate processing time
-        process_time = time.time() - start_time
+        # Origin-Agent-Cluster for process isolation
+        response.headers["Origin-Agent-Cluster"] = "?1"
 
-        # Log response
-        status_code = response.status_code
-        log_level = "WARNING" if status_code >= 400 else "INFO"
+        # DNS prefetch control
+        response.headers["X-DNS-Prefetch-Control"] = "off"
 
-        getattr(self.logger, log_level.lower())(
-            f"Response: {request.method} {request.url.path} - "
-            f"Status: {status_code} - Duration: {process_time:.4f}s",
-            extra={"correlation_id": correlation_id}
-        )
+        # Add HSTS header if HTTPS is enabled
+        if settings.ENABLE_HTTPS:
+            hsts_value = f"max-age={settings.HSTS_MAX_AGE}"
+            if settings.HSTS_INCLUDE_SUBDOMAINS:
+                hsts_value += "; includeSubDomains"
+            if settings.HSTS_PRELOAD:
+                hsts_value += "; preload"
+            response.headers["Strict-Transport-Security"] = hsts_value
 
         return response
-
-
-class SecurityLoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware to log security-related events"""
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.security_logger = logging.getLogger("chama_wallet.security")
-
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-
-        # Log suspicious activities
-        suspicious_indicators = []
-
-        # Check for common attack patterns (simplified examples)
-        user_agent = request.headers.get("user-agent", "").lower()
-        if any(pattern in user_agent for pattern in ["sqlmap", "nmap", "nikto"]):
-            suspicious_indicators.append("suspicious_user_agent")
-
-        # Check for excessive request rate (would need rate limiting)
-        # This is placeholder - actual implementation would use Redis/caching
-
-        # Log security events
-        if suspicious_indicators:
-            correlation_id = getattr(logging, 'correlation_id', 'unknown')
-            self.security_logger.warning(
-                f"Security event detected: {request.method} {request.url.path} - "
-                f"Client: {request.client.host if request.client else 'unknown'} - "
-                f"Indicators: {', '.join(suspicious_indicators)}",
-                extra={"correlation_id": correlation_id}
-            )
-
-        return response
-
-
-class PerformanceMonitoringMiddleware(BaseHTTPMiddleware):
-    """Middleware to log performance metrics for monitoring"""
-
-    def __init__(self, app, slow_request_threshold: float = 2.0):
-        super().__init__(app)
-        self.slow_request_threshold = slow_request_threshold
-        self.performance_logger = logging.getLogger("chama_wallet.performance")
-
-    async def dispatch(self, request: Request, call_next):
-        start_time = time.time()
-        response = await call_next(request)
-        process_time = time.time() - start_time
-
-        # Log slow requests
-        if process_time > self.slow_request_threshold:
-            correlation_id = getattr(logging, 'correlation_id', 'unknown')
-            self.performance_logger.warning(
-                f"Slow request: {request.method} {request.url.path} - "
-                f"Duration: {process_time:.4f}s - Status: {response.status_code}",
-                extra={"correlation_id": correlation_id}
-            )
-
-        # Log high error rates (would need metrics collection)
-        # This is placeholder - actual implementation would use Prometheus/statsd
-
-        return response
-
-
-class APIVersioningMiddleware(BaseHTTPMiddleware):
-    """Middleware to add API versioning headers and validate version requests"""
-
-    def __init__(self, app):
-        super().__init__(app)
-        from api import SUPPORTED_VERSIONS, DEFAULT_VERSION
-
-    async def dispatch(self, request: Request, call_next):
-        # Extract API version from URL path
-        path = request.url.path
-        api_version = None
-
-        if path.startswith("/api/v"):
-            # Extract version from /api/v{version}/
-            version_part = path.split("/api/v")[1].split("/")[0]
-            try:
-                api_version = f"v{version_part}"
-            except:
-                api_version = None
-
-        response = await call_next(request)
-
-        # Add versioning headers to response
-        if api_version and api_version in ["v1", "v2"]:
-            response.headers["API-Version"] = api_version
-            response.headers["API-Supported-Versions"] = ",".join(["v1", "v2"])
-        else:
-            # Default headers for non-versioned routes
-            response.headers["API-Version"] = "v1"  # Current default
-            response.headers["API-Supported-Versions"] = ",".join(["v1", "v2"])
-
-        response.headers["API-Deprecated-Versions"] = ""  # None currently deprecated
-
-        return response
-
-
-class TenantContextMiddleware(BaseHTTPMiddleware):
-    """Middleware to extract tenant ID from request URL and set tenant context"""
-
-    def __init__(self, app):
-        super().__init__(app)
-        # Regex patterns for extracting chama_id from URLs
-        self.chama_patterns = [
-            re.compile(r'/chamas/(\d+)/?.*'),  # /chamas/{id}/...
-            re.compile(r'/api/v\d+/chamas/(\d+)/?.*'),  # Versioned chama routes
-        ]
-
-    async def dispatch(self, request: Request, call_next):
-        # Extract tenant (chama_id) from URL path
-        tenant_id = None
-        path = request.url.path
-
-        for pattern in self.chama_patterns:
-            match = pattern.match(path)
-            if match:
-                tenant_id_str = match.group(1)
-                try:
-                    tenant_id = int(tenant_id_str)
-                    break
-                except ValueError:
-                    # Invalid tenant ID format
-                    pass
-
-        if tenant_id is not None:
-            # Set tenant context and start metrics tracking for this request
-            token = current_tenant.set(tenant_id)
-            start_request_metrics(tenant_id)
-            success = False
-            try:
-                response = await call_next(request)
-                success = response.status_code < 400
-                return response
-            finally:
-                # End metrics tracking and clean up context
-                status_code = 200 if success else 500
-                end_request_metrics(request.method, path, status_code)
-                current_tenant.reset(token)
-        else:
-            # No tenant context needed (e.g., user registration, login)
-            # Still track global metrics if needed
-            start_request_metrics()
-            try:
-                response = await call_next(request)
-                end_request_metrics(request.method, path, response.status_code)
-                return response
-            except Exception:
-                # Ensure metrics are recorded even on failure
-                end_request_metrics(request.method, path, 500)
-                raise
