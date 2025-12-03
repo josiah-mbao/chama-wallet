@@ -36,47 +36,22 @@ class TestRecomputeChamaSummaries:
         mock_chama.id = 1
         mock_chama.name = "Test Chama"
 
-        # Setup SQLAlchemy query mocks - need to handle the complex chaining
-        # When db.query(Chama).filter(Chama.id == chama_id).first() is called
-        chama_query_mock = MagicMock()
-        chama_query_mock.filter.return_value.first.return_value = mock_chama
-
-        # Setup contribution count query: db.query(Contribution).join(Membership).filter(Membership.chama_id == chama_id).count()
-        contrib_count_query_mock = MagicMock()
-        contrib_count_query_mock.join.return_value.filter.return_value.count.return_value = 5
-
-        # Setup total amount query: db.query(Contribution.amount).join(Membership).filter(Membership.chama_id == chama_id).all()
-        amount_query_mock = MagicMock()
-        amount_query_mock.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
-
-        # Setup member count query: db.query(Membership).filter(Membership.chama_id == chama_id).count()
-        member_count_query_mock = MagicMock()
-        member_count_query_mock.filter.return_value.count.return_value = 3
-
-        # Setup latest contribution query with complex joins
-        latest_query_mock = MagicMock()
+        # Setup latest contribution
         mock_latest_contrib = Mock()
         mock_latest_contrib.Contribution.amount = 200.0
         mock_latest_contrib.Contribution.created_at = datetime.now(timezone.utc)
         mock_latest_contrib.email = "test@example.com"
-        latest_query_mock.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
 
-        # Configure mock_db.query to return different mocks based on what's being queried
-        def query_side_effect(*args):
-            if args:  # db.query(SomeClass) - class passed
-                # For simplicity, return a mock that handles all query patterns
-                mock_query = MagicMock()
-                mock_query.filter.return_value.first.return_value = mock_chama
-                mock_query.join.return_value.filter.return_value.count.return_value = 5
-                mock_query.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
-                mock_query.filter.return_value.count.return_value = 3
-                mock_query.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
-                return mock_query
-            else:
-                # Fallback for queries without class
-                return MagicMock()
+        # Simple approach: Create one query mock that handles all method chains
+        query_mock = MagicMock()
+        query_mock.filter.return_value.first.return_value = mock_chama
+        query_mock.join.return_value.filter.return_value.count.return_value = 5
+        query_mock.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
+        query_mock.filter.return_value.count.return_value = 3
+        query_mock.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
 
-        mock_db.query.side_effect = query_side_effect
+        # Always return the same query mock regardless of what model class is passed
+        mock_db.query.return_value = query_mock
 
         # Execute
         recompute_chama_summaries(1)
