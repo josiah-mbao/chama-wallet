@@ -17,7 +17,7 @@ from backend.tasks.analytics import (
 class TestRecomputeChamaSummaries:
     """Test summary recomputation functionality."""
 
-    @patch('backend.tasks.analytics.current_tenant')
+    @patch('backend.database.current_tenant')
     @patch('backend.database.get_db')
     @patch('backend.cache_utils.set_chama_summary')
     @patch('backend.tasks.analytics.logger')
@@ -86,7 +86,7 @@ class TestRecomputeChamaSummaries:
         # Verify logging
         mock_logger.info.assert_called()
 
-    @patch('backend.tasks.analytics.current_tenant')
+    @patch('backend.database.current_tenant')
     @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_recompute_summaries_chama_not_found(self, mock_logger, mock_get_db, mock_tenant):
@@ -105,8 +105,8 @@ class TestRecomputeChamaSummaries:
         # Verify error logging
         mock_logger.error.assert_called_with("Chama 999 not found for summary recomputation")
 
-    @patch('backend.tasks.analytics.current_tenant')
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.current_tenant')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_recompute_summaries_database_error(self, mock_logger, mock_get_db, mock_tenant):
         """Test summary recomputation handles database errors gracefully."""
@@ -324,8 +324,8 @@ class TestBulkDataOperations:
 class TestAnalyticsTaskIntegration:
     """Integration tests for analytics tasks."""
 
-    @patch('backend.tasks.analytics.current_tenant')
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.current_tenant')
+    @patch('backend.database.get_db')
     @patch('backend.cache_utils.set_chama_summary')
     def test_summary_recomputation_data_flow(self, mock_cache, mock_get_db, mock_tenant):
         """Test complete data flow in summary recomputation."""
