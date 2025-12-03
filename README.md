@@ -489,10 +489,10 @@ pytest --cov=backend --cov-report=html  # HTML report in htmlcov/
 | **Security** | 68% | JWT authentication & password hashing |
 | **Rate Limiting** | 56% | API rate limiting & throttling |
 | **Paystack Client** | 48% | Payment gateway integration |
-| **Background Tasks** | 40% | Analytics computation & notifications |
+| **Background Tasks** | **85%** | Analytics computation & notifications |
 | **Metrics** | 70% | Application monitoring & logging |
 | **Exceptions** | 69% | Error handling & custom exceptions |
-| **Total Backend** | **78%** | Enterprise-grade code quality |
+| **Total Backend** | **82%** | Enterprise-grade code quality |
 
 The platform provides a solid foundation for fintech expansion:
 
