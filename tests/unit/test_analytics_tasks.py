@@ -36,10 +36,13 @@ class TestRecomputeChamaSummaries:
         mock_chama.id = 1
         mock_chama.name = "Test Chama"
 
-        # Setup latest contribution
+        # Setup latest contribution with proper structure
+        mock_contribution = Mock()
+        mock_contribution.amount = 200.0
+        mock_contribution.created_at = datetime.now(timezone.utc)  # datetime with isoformat()
+
         mock_latest_contrib = Mock()
-        mock_latest_contrib.Contribution.amount = 200.0
-        mock_latest_contrib.Contribution.created_at = datetime.now(timezone.utc)
+        mock_latest_contrib.Contribution = mock_contribution
         mock_latest_contrib.email = "test@example.com"
 
         # Simple approach: Create one query mock that handles all method chains
