@@ -100,8 +100,17 @@ class TestRecomputeChamaSummaries:
         assert cached_data["latest_contribution"]["amount"] == 200.0
         assert "last_updated" in cached_data
 
-        # Verify logging
+        # Verify logging - should complete successfully
         mock_logger.info.assert_called()
+
+        # Verify no error logs were made (function should complete successfully)
+        error_calls = [call[0][0] for call in mock_logger.error.call_args_list]
+        assert not any("Chama 1 not found" in str(call) for call in error_calls)
+        assert not any("Error recomputing chama summaries" in str(call) for call in error_calls)
+
+        # Verify success completion log
+        info_calls = [call[0][0] for call in mock_logger.info.call_args_list]
+        assert any("Summary recomputation completed for chama 1" in str(call) for call in info_calls)
 
     @patch('backend.database.current_tenant')
     @patch('backend.database.get_db')
