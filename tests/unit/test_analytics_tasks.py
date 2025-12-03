@@ -19,7 +19,7 @@ class TestRecomputeChamaSummaries:
 
     @patch('backend.tasks.analytics.current_tenant')
     @patch('backend.tasks.analytics.get_db')
-    @patch('backend.tasks.analytics.set_chama_summary')
+    @patch('backend.cache_utils.set_chama_summary')
     @patch('backend.tasks.analytics.logger')
     def test_recompute_summaries_success(self, mock_logger, mock_cache, mock_get_db, mock_tenant):
         """Test successful summary recomputation with data."""
@@ -129,7 +129,7 @@ class TestPrecomputeChamaAnalytics:
     """Test analytics precomputation functionality."""
 
     @patch('backend.tasks.analytics.get_db')
-    @patch('backend.tasks.analytics.set_chama_analytics')
+    @patch('backend.cache_utils.set_chama_analytics')
     @patch('backend.tasks.analytics.logger')
     def test_precompute_analytics_success(self, mock_logger, mock_cache, mock_get_db):
         """Test successful analytics precomputation."""
@@ -326,7 +326,7 @@ class TestAnalyticsTaskIntegration:
 
     @patch('backend.tasks.analytics.current_tenant')
     @patch('backend.tasks.analytics.get_db')
-    @patch('backend.tasks.analytics.set_chama_summary')
+    @patch('backend.cache_utils.set_chama_summary')
     def test_summary_recomputation_data_flow(self, mock_cache, mock_get_db, mock_tenant):
         """Test complete data flow in summary recomputation."""
         # Setup comprehensive mocks
