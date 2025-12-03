@@ -14,7 +14,7 @@ from backend.tasks.notifications import (
 class TestNotifyContributionCreated:
     """Test contribution creation notifications."""
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_contribution_created_success(self, mock_logger, mock_get_db):
         """Test successful contribution notification to owners/treasurers."""
@@ -55,7 +55,7 @@ class TestNotifyContributionCreated:
         assert any("New contribution of 500.0 by contributor@example.com" in msg for msg in messages)
         assert any("in chama 'Test Chama'" in msg for msg in messages)
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_contribution_created_chama_not_found(self, mock_logger, mock_get_db):
         """Test contribution notification when chama doesn't exist."""
@@ -67,7 +67,7 @@ class TestNotifyContributionCreated:
 
         mock_logger.error.assert_called_with("Chama 999 not found for notification")
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_contribution_created_contributor_not_found(self, mock_logger, mock_get_db):
         """Test contribution notification when contributor doesn't exist."""
@@ -84,7 +84,7 @@ class TestNotifyContributionCreated:
 
         mock_logger.error.assert_called_with("User 999 not found for notification")
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_contribution_created_no_recipients(self, mock_logger, mock_get_db):
         """Test contribution notification when no owners/treasurers exist."""
@@ -111,7 +111,7 @@ class TestNotifyContributionCreated:
 class TestNotifyMemberAdded:
     """Test member addition notifications."""
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_member_added_success(self, mock_logger, mock_get_db):
         """Test successful member addition notification."""
@@ -149,7 +149,7 @@ class TestNotifyMemberAdded:
         # Check addition logging
         assert any("Member addition notification sent for chama 1" in msg for msg in messages)
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_member_added_chama_not_found(self, mock_logger, mock_get_db):
         """Test member addition notification when chama doesn't exist."""
@@ -161,7 +161,7 @@ class TestNotifyMemberAdded:
 
         mock_logger.error.assert_called_with("Chama 999 not found for member addition notification")
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_member_added_member_not_found(self, mock_logger, mock_get_db):
         """Test member addition notification when new member doesn't exist."""
@@ -182,7 +182,7 @@ class TestNotifyMemberAdded:
 class TestNotifyChamaCreated:
     """Test chama creation notifications."""
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_chama_created_success(self, mock_logger, mock_get_db):
         """Test successful chama creation notification."""
@@ -213,7 +213,7 @@ class TestNotifyChamaCreated:
         messages = [call[0][0] for call in log_calls]
         assert any("Chama creation notification sent for chama 1" in msg for msg in messages)
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_chama_created_chama_not_found(self, mock_logger, mock_get_db):
         """Test chama creation notification when chama doesn't exist."""
@@ -225,7 +225,7 @@ class TestNotifyChamaCreated:
 
         mock_logger.error.assert_called_with("Chama 999 not found for creation notification")
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_chama_created_owner_not_found(self, mock_logger, mock_get_db):
         """Test chama creation notification when owner doesn't exist."""
@@ -246,7 +246,7 @@ class TestNotifyChamaCreated:
 class TestNotificationTaskErrorHandling:
     """Test error handling across notification tasks."""
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_contribution_created_database_error(self, mock_logger, mock_get_db):
         """Test contribution notification handles database errors."""
@@ -258,7 +258,7 @@ class TestNotificationTaskErrorHandling:
 
         mock_logger.error.assert_called_with("Error sending contribution notification: Database connection failed")
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_member_added_database_error(self, mock_logger, mock_get_db):
         """Test member addition notification handles database errors."""
@@ -270,7 +270,7 @@ class TestNotificationTaskErrorHandling:
 
         mock_logger.error.assert_called_with("Error sending member addition notification: Database connection failed")
 
-    @patch('backend.tasks.notifications.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
     def test_notify_chama_created_database_error(self, mock_logger, mock_get_db):
         """Test chama creation notification handles database errors."""

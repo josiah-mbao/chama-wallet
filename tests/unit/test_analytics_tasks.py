@@ -18,7 +18,7 @@ class TestRecomputeChamaSummaries:
     """Test summary recomputation functionality."""
 
     @patch('backend.tasks.analytics.current_tenant')
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.cache_utils.set_chama_summary')
     @patch('backend.tasks.analytics.logger')
     def test_recompute_summaries_success(self, mock_logger, mock_cache, mock_get_db, mock_tenant):
@@ -87,7 +87,7 @@ class TestRecomputeChamaSummaries:
         mock_logger.info.assert_called()
 
     @patch('backend.tasks.analytics.current_tenant')
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_recompute_summaries_chama_not_found(self, mock_logger, mock_get_db, mock_tenant):
         """Test summary recomputation when chama doesn't exist."""
@@ -233,7 +233,7 @@ class TestPrecomputeChamaAnalytics:
 class TestGenerateMonthlyReports:
     """Test monthly report generation."""
 
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_generate_monthly_reports_success(self, mock_logger, mock_get_db):
         """Test successful monthly report generation."""
@@ -263,7 +263,7 @@ class TestGenerateMonthlyReports:
         assert any("Total Amount: 450.0" in call for call in log_calls)
         assert any("Active Members: 3" in call for call in log_calls)
 
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_generate_monthly_reports_chama_not_found(self, mock_logger, mock_get_db):
         """Test monthly report generation when chama doesn't exist."""
