@@ -29,7 +29,7 @@ class TestRecomputeChamaSummaries:
 
         # Setup database mocks
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])  # get_db() returns an iterator
 
         # Setup chama
         mock_chama = Mock()
@@ -113,7 +113,7 @@ class TestRecomputeChamaSummaries:
         mock_tenant.reset.return_value = None
 
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
         # Execute
@@ -132,7 +132,7 @@ class TestRecomputeChamaSummaries:
         mock_tenant.reset.return_value = None
 
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
         mock_db.query.side_effect = Exception("Database error")
 
         # Execute
@@ -152,7 +152,7 @@ class TestPrecomputeChamaAnalytics:
         """Test successful analytics precomputation."""
         # Setup database mock
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
 
         # Setup chama
         mock_chama = Mock()
@@ -216,7 +216,7 @@ class TestPrecomputeChamaAnalytics:
     def test_precompute_analytics_chama_not_found(self, mock_logger, mock_get_db):
         """Test analytics precomputation when chama doesn't exist."""
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
         precompute_chama_analytics(999)
@@ -228,7 +228,7 @@ class TestPrecomputeChamaAnalytics:
     def test_precompute_analytics_empty_data(self, mock_logger, mock_get_db):
         """Test analytics precomputation with no contribution data."""
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
 
         # Setup chama
         mock_chama = Mock()
@@ -255,7 +255,7 @@ class TestGenerateMonthlyReports:
     def test_generate_monthly_reports_success(self, mock_logger, mock_get_db):
         """Test successful monthly report generation."""
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
 
         # Setup chama
         mock_chama = Mock()
@@ -285,7 +285,7 @@ class TestGenerateMonthlyReports:
     def test_generate_monthly_reports_chama_not_found(self, mock_logger, mock_get_db):
         """Test monthly report generation when chama doesn't exist."""
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]
+        mock_get_db.return_value = iter([mock_db])
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
         generate_monthly_reports(999)
