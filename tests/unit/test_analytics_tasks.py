@@ -156,7 +156,7 @@ class TestRecomputeChamaSummaries:
 class TestPrecomputeChamaAnalytics:
     """Test analytics precomputation functionality."""
 
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.cache_utils.set_chama_analytics')
     @patch('backend.tasks.analytics.logger')
     def test_precompute_analytics_success(self, mock_logger, mock_cache, mock_get_db):
@@ -222,7 +222,7 @@ class TestPrecomputeChamaAnalytics:
         assert top_contributors[1]["total_contributed"] == 500.0
         assert top_contributors[2]["total_contributed"] == 300.0
 
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_precompute_analytics_chama_not_found(self, mock_logger, mock_get_db):
         """Test analytics precomputation when chama doesn't exist."""
@@ -234,7 +234,7 @@ class TestPrecomputeChamaAnalytics:
 
         mock_logger.error.assert_called_with("Chama 999 not found for analytics computation")
 
-    @patch('backend.tasks.analytics.get_db')
+    @patch('backend.database.get_db')
     @patch('backend.tasks.analytics.logger')
     def test_precompute_analytics_empty_data(self, mock_logger, mock_get_db):
         """Test analytics precomputation with no contribution data."""
