@@ -70,7 +70,27 @@ class TestNotifyContributionCreated:
         """Test contribution notification when chama doesn't exist."""
         mock_db = MagicMock()
         mock_get_db.return_value.__iter__.return_value = [mock_db]
-        mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        # Track query calls and return appropriate mocks
+        query_count = 0
+
+        def mock_query_side_effect(*args):
+            nonlocal query_count
+            query_count += 1
+
+            query_mock = MagicMock()
+
+            # First query should be for chama - return None to simulate not found
+            if query_count == 1:
+                query_mock.filter.return_value.first.return_value = None
+            # For any subsequent queries (which shouldn't happen), return empty/default mocks
+            else:
+                query_mock.filter.return_value.first.return_value = None
+                query_mock.join.return_value.filter.return_value.all.return_value = []
+
+            return query_mock
+
+        mock_db.query.side_effect = mock_query_side_effect
 
         notify_contribution_created(999, 123, 500.0, 456)
 
