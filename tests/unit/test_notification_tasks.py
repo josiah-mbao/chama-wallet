@@ -81,18 +81,28 @@ class TestNotifyContributionCreated:
         mock_db = MagicMock()
         mock_get_db.return_value.__iter__.return_value = [mock_db]
 
-        # Mock the query to return None
-        mock_db.query.return_value.filter.return_value.first.return_value = None
+        # Track calls to determine which model is being queried
+        call_count = 0
+
+        def query_side_effect(model_class):
+            nonlocal call_count
+            call_count += 1
+
+            mock_query = MagicMock()
+
+            # First call is for Chama - return None
+            if call_count == 1:
+                mock_query.filter.return_value.first.return_value = None
+            # Other calls (for User, etc.) can return default mocks
+            else:
+                mock_query.filter.return_value.first.return_value = MagicMock()
+                mock_query.join.return_value.filter.return_value.all.return_value = []
+
+            return mock_query
+
+        mock_db.query.side_effect = query_side_effect
 
         notify_contribution_created(999, 123, 500.0, 456)
-
-        # Debug: print all error calls
-        for call in mock_logger.error.call_args_list:
-            print(f"ERROR LOGGED: {call}")
-
-        # Debug: print all info calls
-        for call in mock_logger.info.call_args_list:
-            print(f"INFO LOGGED: {call}")
 
         mock_logger.error.assert_called_with("Chama 999 not found for notification")
 
