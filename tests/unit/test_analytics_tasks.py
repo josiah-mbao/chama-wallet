@@ -28,46 +28,59 @@ class TestRecomputeChamaSummaries:
 
         # Setup database mocks
         mock_db = MagicMock()
-        mock_get_db.return_value.__iter__.return_value = [mock_db]  # get_db() returns an iterator
+        mock_get_db.return_value.__iter__.return_value = [mock_db]
 
         # Setup chama
         mock_chama = Mock()
         mock_chama.id = 1
         mock_chama.name = "Test Chama"
 
-        # Setup contribution queries
-        mock_contribution_query = MagicMock()
-        mock_contribution_query.join.return_value.filter.return_value.count.return_value = 5
-        mock_contribution_query.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
-
-        # Setup membership query
-        mock_membership_query = MagicMock()
-        mock_membership_query.filter.return_value.count.return_value = 3
-
-        # Setup latest contribution query
+        # Setup latest contribution
         mock_latest_contrib = Mock()
         mock_latest_contrib.Contribution.amount = 200.0
         mock_latest_contrib.Contribution.created_at = datetime.now(timezone.utc)
         mock_latest_contrib.email = "test@example.com"
 
-        mock_latest_query = MagicMock()
-        mock_latest_query.join.return_value.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
+        # Track query calls and return appropriate mocks in order
+        query_counter = 0
 
-        # Setup chama query
-        mock_chama_query = MagicMock()
-        mock_chama_query.filter.return_value.first.return_value = mock_chama
+        def mock_query_side_effect(*args):
+            nonlocal query_counter
+            query_counter += 1
 
-        # Configure mock_db.query to return different mocks based on model
-        def mock_query_side_effect(model):
-            if hasattr(model, '__tablename__') and model.__tablename__ == 'chamas':
-                return mock_chama_query
-            elif hasattr(model, '__tablename__') and model.__tablename__ == 'contributions':
-                return mock_contribution_query
-            elif hasattr(model, '__tablename__') and model.__tablename__ == 'memberships':
-                return mock_membership_query
+            # Query 1: db.query(Chama) - Chama lookup
+            if query_counter == 1:
+                chama_mock = MagicMock()
+                chama_mock.filter.return_value.first.return_value = mock_chama
+                return chama_mock
+
+            # Query 2: db.query(Contribution) - Contribution count
+            elif query_counter == 2:
+                contrib_count_mock = MagicMock()
+                contrib_count_mock.join.return_value.filter.return_value.count.return_value = 5
+                return contrib_count_mock
+
+            # Query 3: db.query(Contribution.amount) - Contribution amounts
+            elif query_counter == 3:
+                contrib_amount_mock = MagicMock()
+                contrib_amount_mock.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
+                return contrib_amount_mock
+
+            # Query 4: db.query(Membership) - Member count
+            elif query_counter == 4:
+                membership_mock = MagicMock()
+                membership_mock.filter.return_value.count.return_value = 3
+                return membership_mock
+
+            # Query 5: db.query(Contribution, UserModel.email) - Latest contribution
+            elif query_counter == 5:
+                latest_mock = MagicMock()
+                latest_mock.join.return_value.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
+                return latest_mock
+
+            # Fallback for any additional queries
             else:
-                # For complex queries (latest contribution), return the latest query mock
-                return mock_latest_query
+                return MagicMock()
 
         mock_db.query.side_effect = mock_query_side_effect
 
