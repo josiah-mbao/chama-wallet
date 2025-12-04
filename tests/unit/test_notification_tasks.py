@@ -66,41 +66,19 @@ class TestNotifyContributionCreated:
 
     @patch('backend.database.get_db')
     @patch('backend.tasks.notifications.logger')
-    @patch('backend.models.chama.Chama')
-    @patch('backend.models.user.User')
-    @patch('backend.models.membership.Membership')
-    @patch('backend.models.membership.MembershipRole')
-    def test_notify_contribution_created_chama_not_found(self,
-                                                         mock_membership_role,
-                                                         mock_membership,
-                                                         mock_user,
-                                                         mock_chama,
-                                                         mock_logger,
-                                                         mock_get_db):
+    def test_notify_contribution_created_chama_not_found(self, mock_logger, mock_get_db):
         """Test contribution notification when chama doesn't exist."""
         mock_db = MagicMock()
         mock_get_db.return_value.__iter__.return_value = [mock_db]
 
-        # Track calls to determine which model is being queried
-        call_count = 0
+        # Create explicit mock chain - matches pattern in other passing tests
+        mock_first = MagicMock(return_value=None)  # .first() returns None
+        mock_filter_result = MagicMock(first=mock_first)  # .filter() returns this
+        mock_filter = MagicMock(return_value=mock_filter_result)  # The filter method
+        mock_query = MagicMock(filter=mock_filter)  # The query object
 
-        def query_side_effect(model_class):
-            nonlocal call_count
-            call_count += 1
-
-            mock_query = MagicMock()
-
-            # First call is for Chama - return None
-            if call_count == 1:
-                mock_query.filter.return_value.first.return_value = None
-            # Other calls (for User, etc.) can return default mocks
-            else:
-                mock_query.filter.return_value.first.return_value = MagicMock()
-                mock_query.join.return_value.filter.return_value.all.return_value = []
-
-            return mock_query
-
-        mock_db.query.side_effect = query_side_effect
+        # When db.query() is called, return our mock query
+        mock_db.query.return_value = mock_query
 
         notify_contribution_created(999, 123, 500.0, 456)
 
