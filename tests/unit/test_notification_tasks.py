@@ -71,19 +71,10 @@ class TestNotifyContributionCreated:
         mock_db = MagicMock()
         mock_get_db.return_value.__iter__.return_value = [mock_db]
 
-        # Mock current_tenant for multi-tenancy support - this is crucial!
-        with patch('backend.database.current_tenant') as mock_current_tenant:
-            mock_current_tenant.get.return_value = 1  # Set tenant context
+        # Use side_effect pattern like other passing tests
+        mock_db.query.return_value.filter.return_value.first.side_effect = [None]
 
-            # Create a simple mock for the query chain
-            # When db.query(<anything>).filter(<anything>).first() is called, return None
-            mock_query_result = MagicMock()
-            mock_query_result.filter.return_value.first.return_value = None
-
-            # Return the same mock for any query
-            mock_db.query.return_value = mock_query_result
-
-            notify_contribution_created(999, 123, 500.0, 456)
+        notify_contribution_created(999, 123, 500.0, 456)
 
         mock_logger.error.assert_called_with("Chama 999 not found for notification")
 
