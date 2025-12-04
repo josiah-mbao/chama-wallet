@@ -316,7 +316,8 @@ class TestBulkDataOperations:
             bulk_data_operations("recalculate_all_summaries", 123)
 
             mock_task.delay.assert_called_once_with(123)
-            mock_logger.info.assert_called_with("Triggered summary recalculation for chama 123")
+            # Check that the trigger message was logged (not necessarily the last call)
+            mock_logger.info.assert_any_call("Triggered summary recalculation for chama 123")
 
     @patch('backend.tasks.analytics.logger')
     def test_bulk_operations_cleanup(self, mock_logger):
