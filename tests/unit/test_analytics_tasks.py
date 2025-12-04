@@ -2,7 +2,6 @@
 Unit tests for analytics background tasks.
 Tests summary computation, analytics precomputation, and bulk operations.
 """
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch, MagicMock
 
@@ -29,32 +28,48 @@ class TestRecomputeChamaSummaries:
 
         # Setup database mocks
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])  # get_db() returns an iterator
+        mock_get_db.return_value.__iter__.return_value = [mock_db]  # get_db() returns an iterator
 
         # Setup chama
         mock_chama = Mock()
         mock_chama.id = 1
         mock_chama.name = "Test Chama"
 
-        # Setup latest contribution with proper structure
-        mock_contribution = Mock()
-        mock_contribution.amount = 200.0
-        mock_contribution.created_at = datetime.now(timezone.utc)  # datetime with isoformat()
+        # Setup contribution queries
+        mock_contribution_query = MagicMock()
+        mock_contribution_query.join.return_value.filter.return_value.count.return_value = 5
+        mock_contribution_query.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
 
+        # Setup membership query
+        mock_membership_query = MagicMock()
+        mock_membership_query.filter.return_value.count.return_value = 3
+
+        # Setup latest contribution query
         mock_latest_contrib = Mock()
-        mock_latest_contrib.Contribution = mock_contribution
+        mock_latest_contrib.Contribution.amount = 200.0
+        mock_latest_contrib.Contribution.created_at = datetime.now(timezone.utc)
         mock_latest_contrib.email = "test@example.com"
 
-        # Simple approach: Create one query mock that handles all method chains
-        query_mock = MagicMock()
-        query_mock.filter.return_value.first.return_value = mock_chama
-        query_mock.join.return_value.filter.return_value.count.return_value = 5
-        query_mock.join.return_value.filter.return_value.all.return_value = [(100.0,), (200.0,)]
-        query_mock.filter.return_value.count.return_value = 3
-        query_mock.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
+        mock_latest_query = MagicMock()
+        mock_latest_query.join.return_value.join.return_value.filter.return_value.order_by.return_value.first.return_value = mock_latest_contrib
 
-        # Always return the same query mock regardless of what model class is passed
-        mock_db.query.return_value = query_mock
+        # Setup chama query
+        mock_chama_query = MagicMock()
+        mock_chama_query.filter.return_value.first.return_value = mock_chama
+
+        # Configure mock_db.query to return different mocks based on model
+        def mock_query_side_effect(model):
+            if hasattr(model, '__tablename__') and model.__tablename__ == 'chamas':
+                return mock_chama_query
+            elif hasattr(model, '__tablename__') and model.__tablename__ == 'contributions':
+                return mock_contribution_query
+            elif hasattr(model, '__tablename__') and model.__tablename__ == 'memberships':
+                return mock_membership_query
+            else:
+                # For complex queries (latest contribution), return the latest query mock
+                return mock_latest_query
+
+        mock_db.query.side_effect = mock_query_side_effect
 
         # Execute
         recompute_chama_summaries(1)
@@ -63,28 +78,17 @@ class TestRecomputeChamaSummaries:
         mock_tenant.set.assert_called_once_with(1)
         mock_tenant.reset.assert_called_once_with("token")
 
-        # Verify database queries were made (at least chama lookup)
-        assert mock_db.query.called  # At least one query was made
-
-        # Verify caching - temporarily removed to debug
-        # The function completes but caching fails - likely due to schema/WebSocket issues
-        if mock_cache.called:
-            cached_data = mock_cache.call_args[0][1]
-            assert cached_data["chama_id"] == 1
-            assert cached_data["name"] == "Test Chama"
-            assert cached_data["total_members"] == 3
-            assert cached_data["total_contributions"] == 5
-            assert cached_data["total_contributions_count"] == 2
-            assert cached_data["latest_contribution"]["amount"] == 200.0
-            assert "last_updated" in cached_data
-        else:
-            # Function completes successfully but caching fails
-            # This is likely due to ChamaSummary schema or WebSocket broadcast issues
-            pass
-
-        # TODO: Fix logger mocking - function runs but logger patch doesn't work
-        # Verify logging - temporarily disabled due to mock issues
-        # mock_logger.info.assert_called()
+        # Verify caching was called
+        mock_cache.assert_called_once()
+        cached_data = mock_cache.call_args[0][1]
+        assert cached_data["chama_id"] == 1
+        assert cached_data["name"] == "Test Chama"
+        assert cached_data["total_members"] == 3
+        assert cached_data["total_contributions"] == 300.0  # 100 + 200
+        assert cached_data["total_contributions_count"] == 5
+        assert cached_data["latest_contribution"]["amount"] == 200.0
+        assert cached_data["latest_contribution"]["member"] == "test@example.com"
+        assert "last_updated" in cached_data
 
         # Verify no error logs were made (function should complete successfully)
         error_calls = [call[0][0] for call in mock_logger.error.call_args_list]
