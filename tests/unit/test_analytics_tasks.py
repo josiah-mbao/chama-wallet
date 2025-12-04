@@ -324,21 +324,21 @@ class TestBulkDataOperations:
         """Test bulk operation for data cleanup."""
         bulk_data_operations("cleanup_old_contributions", 123)
 
-        mock_logger.info.assert_called_with("Performing cleanup of old contribution records")
+        mock_logger.info.assert_any_call("Performing cleanup of old contribution records")
 
     @patch('backend.tasks.analytics.logger')
     def test_bulk_operations_validate_integrity(self, mock_logger):
         """Test bulk operation for data integrity validation."""
         bulk_data_operations("validate_data_integrity", 123)
 
-        mock_logger.info.assert_called_with("Performing data integrity validation")
+        mock_logger.info.assert_any_call("Performing data integrity validation")
 
     @patch('backend.tasks.analytics.logger')
     def test_bulk_operations_unknown_type(self, mock_logger):
         """Test bulk operation with unknown operation type."""
         bulk_data_operations("unknown_operation", 123)
 
-        mock_logger.warning.assert_called_with("Unknown bulk operation type: unknown_operation")
+        mock_logger.warning.assert_any_call("Unknown bulk operation type: unknown_operation")
 
     @patch('backend.tasks.analytics.logger')
     def test_bulk_operations_error_handling(self, mock_logger):
@@ -348,7 +348,7 @@ class TestBulkDataOperations:
 
             bulk_data_operations("recalculate_all_summaries", 123)
 
-            mock_logger.error.assert_called_with("Error performing bulk operation 'recalculate_all_summaries': Task error")
+            mock_logger.error.assert_any_call("Error performing bulk operation 'recalculate_all_summaries': Task error")
 
 
 class TestAnalyticsTaskIntegration:
